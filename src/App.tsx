@@ -1,0 +1,267 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { baseLapTime, compute } from './engine';
+import { migrate, newPlan, uid, type Plan } from './model';
+import { samplePlan } from './sample';
+import { nurburgringPlan } from './samples/nurburgring';
+import { usePlans } from './store';
+import { offsetLabel } from './time';
+import { Field } from './ui';
+import { AccountMenu, CloudBar } from './views/Account';
+import { Availability } from './views/Availability';
+import { Drivers } from './views/Drivers';
+import { Notes } from './views/Notes';
+import { Overview } from './views/Overview';
+import { Setup } from './views/Setup';
+import { Stints } from './views/Stints';
+
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'setup', label: 'Race setup' },
+  { id: 'drivers', label: 'Drivers', team: true },
+  { id: 'availability', label: 'Availability', team: true },
+  { id: 'stints', label: 'Stints' },
+  { id: 'notes', label: 'Notes' },
+];
+
+function readPref(key: string, fallback: string) {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function writePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
+}
+
+export default function App() {
+  const { plans, plan, update, add, remove, select, cloud } = usePlans();
+  const [tab, setTab] = useState(() => readPref('enduro-planner.tab', 'overview'));
+  const [zone, setZone] = useState(() => readPref('enduro-planner.zone', 'utc'));
+  const [now, setNow] = useState(Date.now());
+  const [menu, setMenu] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [notice, setNotice] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => writePref('enduro-planner.tab', tab), [tab]);
+  useEffect(() => writePref('enduro-planner.zone', zone), [zone]);
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(''), 3500);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const calc = useMemo(() => compute(plan), [plan]);
+  const team = plan.mode === 'team';
+  const visibleTabs = TABS.filter((t) => !t.team || team);
+  const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : 'overview';
+
+  const zoneDriver = zone.startsWith('driver:') ? plan.drivers.find((d) => `driver:${d.id}` === zone) : undefined;
+  const effectiveZone = zone.startsWith('driver:') && !zoneDriver ? 'utc' : zone;
+  const tz = (t: number) =>
+    effectiveZone === 'device' ? -new Date(t).getTimezoneOffset() : zoneDriver ? zoneDriver.utcOffset * 60 : 0;
+  const tzName = effectiveZone === 'device' ? 'your local time' : zoneDriver ? `${zoneDriver.name}'s time (${offsetLabel(zoneDriver.utcOffset * 60)})` : 'GMT';
+
+  const setMode = (mode: Plan['mode']) =>
+    update((p) => {
+      if (p.mode === mode) return p;
+      if (mode === 'solo') return { ...p, mode, baseLapTime: baseLapTime(p) };
+      const drivers = p.drivers.map((d, i) => (i === 0 && !d.lapTime ? { ...d, lapTime: p.baseLapTime } : d));
+      return { ...p, mode, drivers };
+    });
+
+  const exportJson = () => {
+    const json = JSON.stringify(plan, null, 2);
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${plan.name.replace(/[^\w-]+/g, '_') || 'race-plan'}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch {
+      /* downloads blocked */
+    }
+    navigator.clipboard?.writeText(json).then(
+      () => setNotice('Plan saved as a file and copied to the clipboard.'),
+      () => setNotice('Plan saved as a file.'),
+    );
+    setMenu(false);
+  };
+
+  const importJson = async (file: File) => {
+    try {
+      const data = JSON.parse(await file.text());
+      add({ ...migrate(data), id: uid() });
+      setNotice(`Imported “${data.name ?? 'plan'}”.`);
+    } catch {
+      setNotice('That file is not a race plan exported from this app.');
+    }
+    setMenu(false);
+  };
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <span>Stint Planner</span>
+        </div>
+        <div className="plan-picker">
+          <label htmlFor="plan-select" className="sr-only">
+            Race plan
+          </label>
+          <select id="plan-select" className="input" value={plan.id} onChange={(e) => select(e.target.value)}>
+            {plans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <button className="btn" aria-expanded={menu} onClick={() => (setMenu(!menu), setConfirmDelete(false))}>
+            Plans
+          </button>
+          {menu && (
+            <div className="menu" role="menu">
+              <button role="menuitem" onClick={() => (add(newPlan('team')), setMenu(false))}>
+                New team race
+              </button>
+              <button role="menuitem" onClick={() => (add(newPlan('solo')), setMenu(false))}>
+                New solo race
+              </button>
+              <button role="menuitem" onClick={() => (add({ ...structuredClone(plan), id: uid(), name: `${plan.name} (copy)` }), setMenu(false))}>
+                Duplicate this plan
+              </button>
+              <button role="menuitem" onClick={() => (add(nurburgringPlan()), setMenu(false))}>
+                Example: Nürburgring 24h (real team plan)
+              </button>
+              <button role="menuitem" onClick={() => (add(samplePlan()), setMenu(false))}>
+                Example: 24h team race (spreadsheet sample)
+              </button>
+              <hr />
+              <button role="menuitem" onClick={exportJson}>
+                Export plan (.json)
+              </button>
+              <button role="menuitem" onClick={() => fileRef.current?.click()}>
+                Import plan…
+              </button>
+              <hr />
+              {confirmDelete ? (
+                <button role="menuitem" className="danger" onClick={() => (remove(plan.id), setMenu(false), setConfirmDelete(false))}>
+                  {cloud.meta[plan.id] && cloud.role !== 'owner' ? `Yes, leave “${plan.name}”` : `Yes, delete “${plan.name}”`}
+                </button>
+              ) : (
+                <button role="menuitem" className="danger" onClick={() => setConfirmDelete(true)}>
+                  {cloud.meta[plan.id] && cloud.role !== 'owner' ? 'Leave this shared plan' : 'Delete this plan'}
+                </button>
+              )}
+            </div>
+          )}
+          <input
+            ref={fileRef}
+            id="import-file"
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importJson(f);
+              e.target.value = '';
+            }}
+          />
+        </div>
+        <AccountMenu cloud={cloud} />
+        <div className="zone">
+          <label htmlFor="zone-select">Show times in</label>
+          <select id="zone-select" className="input" value={effectiveZone} onChange={(e) => setZone(e.target.value)}>
+            <option value="utc">GMT</option>
+            <option value="device">My local time</option>
+            {team &&
+              plan.drivers
+                .filter((d) => d.name.trim())
+                .map((d) => (
+                  <option key={d.id} value={`driver:${d.id}`}>
+                    {d.name} ({offsetLabel(d.utcOffset * 60)})
+                  </option>
+                ))}
+          </select>
+        </div>
+      </header>
+
+      <div className="plan-head">
+        <div className="plan-title">
+          <Field id="plan-name" ariaLabel="Plan name" className="title-input" value={plan.name} onCommit={(v) => v.trim() && update((p) => ({ ...p, name: v.trim() }))} />
+          <p className="muted">
+            {[plan.event.track, plan.event.car].filter(Boolean).join(' · ') || 'Set the track and car in Race setup'}
+          </p>
+          <CloudBar plan={plan} cloud={cloud} />
+        </div>
+        <div className="toggles">
+          <div className="seg" role="radiogroup" aria-label="Driver setup">
+            {(['solo', 'team'] as const).map((m) => (
+              <button key={m} role="radio" aria-checked={plan.mode === m} className={plan.mode === m ? 'on' : ''} onClick={() => setMode(m)}>
+                {m === 'solo' ? 'Solo' : 'Team'}
+              </button>
+            ))}
+          </div>
+          <div className="seg" role="radiogroup" aria-label="Event type">
+            <button role="radio" aria-checked={plan.eventKind === 'special'} className={plan.eventKind === 'special' ? 'on' : ''} onClick={() => update((p) => ({ ...p, eventKind: 'special' }))}>
+              Special event
+            </button>
+            <button role="radio" aria-checked={plan.eventKind === 'league'} className={plan.eventKind === 'league' ? 'on' : ''} onClick={() => update((p) => ({ ...p, eventKind: 'league' }))}>
+              League
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <nav className="tabs" aria-label="Sections">
+        {visibleTabs.map((t) => (
+          <button key={t.id} className={activeTab === t.id ? 'on' : ''} aria-current={activeTab === t.id ? 'page' : undefined} onClick={() => setTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      {cloud.readOnly && (
+        <p className="readonly-note" role="status">
+          You can view this plan but not change it. Ask {cloud.meta[plan.id]?.ownerEmail} for edit access.
+        </p>
+      )}
+      <main className={cloud.readOnly ? 'readonly' : ''}>
+        {(() => {
+          const props = { plan, calc, update, tz, tzName, now, go: setTab };
+          switch (activeTab) {
+            case 'setup':
+              return <Setup {...props} />;
+            case 'drivers':
+              return <Drivers {...props} />;
+            case 'availability':
+              return <Availability {...props} />;
+            case 'stints':
+              return <Stints {...props} />;
+            case 'notes':
+              return <Notes {...props} />;
+            default:
+              return <Overview {...props} />;
+          }
+        })()}
+      </main>
+      {notice && (
+        <div className="toast" role="status">
+          {notice}
+        </div>
+      )}
+      <footer className="foot muted">Plans are saved in this browser. Export a plan to back it up or share it with your team.</footer>
+    </div>
+  );
+}
