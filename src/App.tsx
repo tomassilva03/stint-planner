@@ -5,7 +5,7 @@ import { samplePlan } from './sample';
 import { nurburgringPlan } from './samples/nurburgring';
 import { usePlans } from './store';
 import { offsetLabel } from './time';
-import { Field } from './ui';
+import { BrandMark, Field } from './ui';
 import { AccountMenu, CloudBar } from './views/Account';
 import { Availability } from './views/Availability';
 import { Drivers } from './views/Drivers';
@@ -22,6 +22,8 @@ const TABS = [
   { id: 'stints', label: 'Stints' },
   { id: 'notes', label: 'Notes' },
 ];
+
+const THEMES = ['auto', 'dark', 'light'] as const;
 
 function readPref(key: string, fallback: string) {
   try {
@@ -42,6 +44,7 @@ export default function App() {
   const { plans, plan, update, add, remove, select, cloud } = usePlans();
   const [tab, setTab] = useState(() => readPref('enduro-planner.tab', 'overview'));
   const [zone, setZone] = useState(() => readPref('enduro-planner.zone', 'utc'));
+  const [theme, setTheme] = useState(() => readPref('enduro-planner.theme', 'auto'));
   const [now, setNow] = useState(Date.now());
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -54,6 +57,11 @@ export default function App() {
   }, []);
   useEffect(() => writePref('enduro-planner.tab', tab), [tab]);
   useEffect(() => writePref('enduro-planner.zone', zone), [zone]);
+  useEffect(() => {
+    writePref('enduro-planner.theme', theme);
+    if (theme === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+  }, [theme]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(''), 3500);
@@ -113,8 +121,10 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          <span>Stint Planner</span>
+          <BrandMark />
+          <span>
+            Night<b>shift</b>
+          </span>
         </div>
         <div className="plan-picker">
           <label htmlFor="plan-select" className="sr-only">
@@ -180,6 +190,14 @@ export default function App() {
           />
         </div>
         <AccountMenu cloud={cloud} />
+        <button
+          className="btn theme-btn"
+          title="Switch between the system setting, dark and light"
+          onClick={() => setTheme(THEMES[(THEMES.indexOf(theme as (typeof THEMES)[number]) + 1) % THEMES.length])}
+        >
+          {theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'Auto'}
+          <span className="sr-only"> theme</span>
+        </button>
         <div className="zone">
           <label htmlFor="zone-select">Show times in</label>
           <select id="zone-select" className="input" value={effectiveZone} onChange={(e) => setZone(e.target.value)}>

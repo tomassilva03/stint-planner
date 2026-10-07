@@ -83,3 +83,15 @@ export function Pill(props: { tone: 'open' | 'tentative' | 'blocked' | 'unknown'
 }
 
 export const AVAIL_LABEL = { open: 'Open', tentative: 'Tentative', blocked: 'Blocked', unknown: 'No info' } as const;
+
+/** Nightshift mark: a crescent moon over three stints, the last one still to run. */
+export function BrandMark({ size = 26 }: { size?: number }) {
+  return (
+    <svg className="brand-mark" width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M20 5a15 15 0 1 0 14.4 19.3A13 13 0 0 1 15.3 5.8 15 15 0 0 1 20 5Z" fill="#e9ecf6" />
+      <rect x="8" y="33" width="7" height="3" rx="1.5" fill="#ffa424" />
+      <rect x="17" y="33" width="7" height="3" rx="1.5" fill="#ffa424" />
+      <rect x="26" y="33" width="7" height="3" rx="1.5" fill="#ffa424" opacity=".45" />
+    </svg>
+  );
+}
