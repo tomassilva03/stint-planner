@@ -1,6 +1,6 @@
 import { newDriver, type Plan } from '../model';
 import { lapTime, parseLapTime } from '../time';
-import { Field, NumberField } from '../ui';
+import { ColorPicker, Field, NumberField } from '../ui';
 import type { ViewProps } from './Overview';
 
 export function Drivers({ plan, update, calc }: ViewProps) {
@@ -39,7 +39,7 @@ export function Drivers({ plan, update, calc }: ViewProps) {
             {plan.drivers.map((d, i) => (
               <tr key={d.id}>
                 <td>
-                  <input id={`drv-color-${d.id}`} aria-label={`${d.name} colour`} type="color" className="color" value={d.color} onChange={(e) => set((p) => void (p.drivers[i].color = e.target.value))} />
+                  <ColorPicker id={`drv-color-${d.id}`} label={`${d.name} colour`} value={d.color} onChange={(c) => set((p) => void (p.drivers[i].color = c))} />
                 </td>
                 <td>
                   <Field id={`drv-name-${d.id}`} ariaLabel="Name" className="input" value={d.name} onCommit={(v) => set((p) => void (p.drivers[i].name = v))} />
