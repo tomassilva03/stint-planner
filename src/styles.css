@@ -112,12 +112,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .plan-picker select { min-width: 0; max-width: 380px; }
 .zone { display: flex; align-items: center; gap: 2px; }
 /* Top bar controls read as text until you point at them. */
-.topbar .plan-picker > select, .topbar .plan-picker > .btn, .topbar .account > .btn, .topbar > .btn, .topbar .zone select {
+.topbar .account > .btn, .topbar > .btn, .topbar .zone select {
   border-color: transparent; background-color: transparent;
 }
-.topbar .plan-picker > select:hover, .topbar .plan-picker > .btn:hover, .topbar .account > .btn:hover, .topbar > .btn:hover, .topbar .zone select:hover,
-.topbar .plan-picker > .btn[aria-expanded='true'], .topbar .account > .btn[aria-expanded='true'] { background-color: var(--hover); }
-.topbar .plan-picker > select { font-weight: 600; }
+.topbar .account > .btn:hover, .topbar > .btn:hover, .topbar .zone select:hover, .topbar .account > .btn[aria-expanded='true'] { background-color: var(--hover); }
+.plan-button {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; padding: 6px 10px; border: 0; border-radius: 6px;
+  background: none; font-weight: 600; cursor: pointer; color: var(--ink);
+}
+.plan-button svg { flex: none; color: var(--muted); }
+.plan-button:hover, .plan-button[aria-expanded='true'] { background: var(--hover); }
+.plan-button-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-menu { min-width: 300px; max-width: min(420px, calc(100vw - 32px)); }
+.menu-label { font-size: 12px; color: var(--muted); padding: 6px 10px 2px; }
+.plan-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.plan-item[aria-checked='true'] { font-weight: 600; }
+/* Native dropdown lists: match the theme instead of the OS default. */
+option { background-color: var(--surface); color: var(--ink); }
 .topbar select { field-sizing: content; width: auto; flex: 0 1 auto; }
 .theme-btn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0 !important; color: var(--muted); }
 .theme-btn:hover { color: var(--ink); }

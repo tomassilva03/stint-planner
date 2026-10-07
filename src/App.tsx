@@ -67,6 +67,20 @@ export default function App() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [notice, setNotice] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !menuRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [menu]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 15_000);
@@ -141,22 +155,27 @@ export default function App() {
           <BrandMark />
           <span>Nightstint</span>
         </div>
-        <div className="plan-picker">
-          <label htmlFor="plan-select" className="sr-only">
-            Race plan
-          </label>
-          <select id="plan-select" className="input" value={plan.id} onChange={(e) => select(e.target.value)}>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <button className="btn" aria-expanded={menu} onClick={() => (setMenu(!menu), setConfirmDelete(false))}>
-            Plans
+        <div className="plan-picker" ref={menuRef}>
+          <button className="plan-button" aria-haspopup="menu" aria-expanded={menu} onClick={() => (setMenu(!menu), setConfirmDelete(false))}>
+            <span className="plan-button-name">{plan.name}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           {menu && (
-            <div className="menu" role="menu">
+            <div className="menu plan-menu" role="menu">
+              <div className="menu-label">Your plans</div>
+              {plans.map((p) => (
+                <button key={p.id} role="menuitemradio" aria-checked={p.id === plan.id} className="plan-item" onClick={() => (select(p.id), setMenu(false))}>
+                  <span>{p.name}</span>
+                  {p.id === plan.id && (
+                    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+              <hr />
               <button role="menuitem" onClick={() => (add(newPlan('team')), setMenu(false))}>
                 New team race
               </button>
