@@ -34,9 +34,10 @@ The helper's own messages are in `%LOCALAPPDATA%\com.nightstint.desktop\logs\hel
 The app shows the live site, https://stint-planner-three.vercel.app, so website updates reach it
 without reinstalling. Only changes to the helper or the app itself need a new installer.
 
-An installer built from a pull request opens that pull request's Vercel preview instead, with
-**(preview)** in the window title. To point any build somewhere else, start it with the
-`NIGHTSTINT_URL` environment variable set, e.g. `http://localhost:5173`.
+Every installer, including ones built from a pull request, opens the live site. (Vercel previews
+ask for a Vercel login, which teammates don't have.) To point the app somewhere else, start it
+with the `NIGHTSTINT_URL` environment variable set, e.g. `http://localhost:5173` or a preview
+address; the title then says **(preview)**.
 
 ## Building it yourself
 
