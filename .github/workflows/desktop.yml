@@ -16,6 +16,8 @@ jobs:
   windows:
     name: Windows installer
     runs-on: windows-latest
+    permissions:
+      contents: write
     defaults:
       run:
         shell: bash
@@ -45,8 +47,38 @@ jobs:
       - name: Check the bundled helper loads the iRacing SDK
         run: desktop/src-tauri/binaries/nightstint-helper-x86_64-pc-windows-msvc.exe helper/dist/lib/esm/helper.mjs --check-sdk
 
-      - run: npx tauri build
+      # Installed apps update themselves from the latest release, so each build gets a new version.
+      # Updates are signed with the TAURI_SIGNING_PRIVATE_KEY secret; without it the build is unsigned.
+      - name: Build the installer
         working-directory: desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          version="0.1.${{ github.run_number }}"
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then signed=true; else signed=false; fi
+          npx tauri build --config "{\"version\":\"$version\",\"bundle\":{\"createUpdaterArtifacts\":$signed}}"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "SIGNED=$signed" >> "$GITHUB_ENV"
+
+      - name: Publish the update
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && env.SIGNED == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          exe=$(ls desktop/src-tauri/target/release/bundle/nsis/*-setup.exe)
+          tag="desktop-v$VERSION"
+          url="https://github.com/${{ github.repository }}/releases/download/$tag/$(basename "$exe")"
+          node -e "
+            const fs = require('fs');
+            fs.writeFileSync('latest.json', JSON.stringify({
+              version: process.env.VERSION,
+              pub_date: new Date().toISOString(),
+              platforms: { 'windows-x86_64': { signature: fs.readFileSync(process.argv[1], 'utf8').trim(), url: process.argv[2] } },
+            }, null, 2));
+          " "$exe.sig" "$url"
+          notes=$(git log -1 --format=%b | head -1); echo "${notes:-$(git log -1 --format=%s)}" > notes.txt
+          gh release create "$tag" "$exe" latest.json --target "${{ github.sha }}" --title "Nightstint $VERSION" --notes-file notes.txt --latest
 
       - uses: actions/upload-artifact@v4
         with:

@@ -6,8 +6,8 @@ strip. Teammates who don't drive keep using the website; it's the same site, pla
 
 ## Install
 
-1. Open the latest **Desktop app** run under the repository's **Actions** tab and download the
-   **Nightstint-setup** file at the bottom of the run. Unzip it and run `Nightstint_..._x64-setup.exe`.
+1. Download `Nightstint_..._x64-setup.exe` from the latest release:
+   https://github.com/tomassilva03/stint-planner/releases/latest
 2. Windows may say it protected your PC, because the installer isn't signed. Choose
    **More info → Run anyway**.
 3. Nightstint opens. Sign in as on the website. The planner connects to the helper by itself.
@@ -25,6 +25,7 @@ Right-click the moon icon near the clock:
 - **Open recordings folder** has each session's readings (`<date>-samples.jsonl`) and events.
   Send the samples file to check or debug a session.
 - **Start with Windows** turns auto-start on or off.
+- **Check for updates** installs a newer version if there is one.
 - **Quit Nightstint** stops the app and the helper.
 
 The helper's own messages are in `%LOCALAPPDATA%\com.nightstint.desktop\logs\helper.log`.
@@ -32,7 +33,18 @@ The helper's own messages are in `%LOCALAPPDATA%\com.nightstint.desktop\logs\hel
 ## Which site it opens
 
 The app shows the live site, https://stint-planner-three.vercel.app, so website updates reach it
-without reinstalling. Only changes to the helper or the app itself need a new installer.
+straight away.
+
+## Updates
+
+Changes to the app or the helper update installed apps by themselves. Every merge to `main` that
+touches `desktop/`, `helper/` or `src/live/` publishes a new release, and the app installs it the
+next time it starts (or from **Check for updates** in the tray menu). The tray menu shows the
+version you have.
+
+Updates are signed, and the app only accepts ones signed with the project's key. The public half
+is in `src-tauri/tauri.conf.json`; the private half is the `TAURI_SIGNING_PRIVATE_KEY` repository
+secret. Without that secret, builds still work but no release is published.
 
 Every installer, including ones built from a pull request, opens the live site. (Vercel previews
 ask for a Vercel login, which teammates don't have.) To point the app somewhere else, start it
@@ -42,7 +54,8 @@ address; the title then says **(preview)**.
 ## Building it yourself
 
 GitHub Actions builds the installer on every change to `desktop/`, `helper/` or `src/live/`
-(workflow `.github/workflows/desktop.yml`). To build on a Windows PC instead you need Node 22,
+(workflow `.github/workflows/desktop.yml`); pull requests get it as the **Nightstint-setup**
+artifact on the run's page. To build on a Windows PC instead you need Node 22,
 Rust (https://rustup.rs) and the Visual Studio C++ build tools, then:
 
 ```
