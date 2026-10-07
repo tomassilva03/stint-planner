@@ -122,9 +122,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <BrandMark />
-          <span>
-            Night<b>shift</b>
-          </span>
+          <span>Nightshift</span>
         </div>
         <div className="plan-picker">
           <label htmlFor="plan-select" className="sr-only">
