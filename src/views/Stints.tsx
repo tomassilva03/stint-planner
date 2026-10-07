@@ -3,9 +3,11 @@ import { autoAssign, blankStint, spreadSafetyCars, type StintCalc } from '../eng
 import type { Plan, StintType } from '../model';
 import { clock, dateLabel, delta, duration, lapTime, parseClockNear, parseDurationText, shortDuration, simClock } from '../time';
 import { AVAIL_LABEL, Field, NumberField, Pill, Select } from '../ui';
+import { LiveStrip } from '../live/LiveStrip';
+import type { Live } from '../live/useLive';
 import type { ViewProps } from './Overview';
 
-export function Stints({ plan, calc, update, tz, tzName, now }: ViewProps) {
+export function Stints({ plan, calc, update, tz, tzName, now, live, readOnly }: ViewProps & { live?: Live; readOnly?: boolean }) {
   const set = (fn: (p: Plan) => void) =>
     update((p) => {
       const copy = structuredClone(p);
@@ -26,6 +28,7 @@ export function Stints({ plan, calc, update, tz, tzName, now }: ViewProps) {
         <h2>Stint plan</h2>
         <span className="muted">Times in {tzName}</span>
       </div>
+      {live && <LiveStrip live={live} readOnly={!!readOnly} drivers={plan.drivers} />}
       <div className="toolbar">
         {team && (
           <>
@@ -47,7 +50,7 @@ export function Stints({ plan, calc, update, tz, tzName, now }: ViewProps) {
             </button>
           </>
         )}
-        <button className="btn small" onClick={() => set((p) => p.stints.forEach((s) => (s.actualEnd = undefined, s.actualLaps = undefined)))}>
+        <button className="btn small" onClick={() => set((p) => p.stints.forEach((s) => (s.actualEnd = undefined, s.actualLaps = undefined, s.liveId = undefined, s.lapsAtEnd = undefined)))}>
           Clear live times
         </button>
       </div>

@@ -1,0 +1,62 @@
+name: Desktop app
+
+on:
+  pull_request:
+    paths: ['desktop/**', 'helper/**', 'src/live/**', '.github/workflows/desktop.yml']
+  push:
+    branches: [main]
+    paths: ['desktop/**', 'helper/**', 'src/live/**', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            helper/package-lock.json
+            desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      # A pull request's build opens that PR's Vercel preview, so it can be tried before merging
+      - name: Point a PR build at its preview
+        if: github.event_name == 'pull_request'
+        run: |
+          slug=$(echo "${{ github.head_ref }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
+          echo "NIGHTSTINT_URL=https://stint-planner-git-${slug}-tomassilva03s-projects.vercel.app" >> "$GITHUB_ENV"
+
+      - run: npm ci
+        working-directory: helper
+      - run: npm run typecheck
+        working-directory: helper
+      - run: npm ci
+        working-directory: desktop
+      - run: npm run prepare-helper
+        working-directory: desktop
+
+      - name: Check the bundled helper loads the iRacing SDK
+        run: desktop/src-tauri/binaries/nightstint-helper-x86_64-pc-windows-msvc.exe helper/dist/lib/esm/helper.mjs --check-sdk
+
+      - run: npx tauri build
+        working-directory: desktop
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nightstint-setup
+          path: desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error

@@ -1,0 +1,29 @@
+{
+  "name": "stint-planner-helper",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Reads iRacing live data on the driving PC and sends it to the stint planner in your browser.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "demo": "tsx src/main.ts --demo",
+    "typecheck": "tsc --noEmit",
+    "bundle": "node bundle.mjs"
+  },
+  "dependencies": {
+    "tsx": "^4.19.0",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "irsdk-node": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.12",
+    "esbuild": "^0.25.11",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

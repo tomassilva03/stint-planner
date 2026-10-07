@@ -42,6 +42,10 @@ export interface Stint {
   actualEnd?: string;
   /** Live: laps actually completed in this stint */
   actualLaps?: number;
+  /** Live: id of the iRacing pit exit that filled actualEnd, so it is never applied twice */
+  liveId?: string;
+  /** Live: the car's total race laps when this stint ended */
+  lapsAtEnd?: number;
   note?: string;
   /** Unscheduled time lost during this stint, seconds: repairs, a long stop, a penalty */
   lostSec?: number;

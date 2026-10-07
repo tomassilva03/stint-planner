@@ -68,6 +68,15 @@ Switch a plan to **League** at the top, then turn rules on under Race setup → 
   the car in one go (back-to-back stints count together). Auto-assign respects the last one.
 - **Minimum pit stops**: warns when the plan has fewer stops than required.
 
+## Live data from iRacing (optional)
+
+Drivers install the **Nightstint desktop app** on the driving PC (see [desktop/README.md](desktop/README.md)).
+It opens the planner in its own window and runs the iRacing helper in the background, so each
+stint's actual end and laps fill in by themselves when the car leaves the pits, and a live strip
+on the Stints tab shows lap times and fuel. Teammates who don't drive keep using the website.
+
+Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
+
 ## Accounts and sharing (optional)
 
 Without this the app works exactly as before and keeps plans in your browser. With it, you sign in
