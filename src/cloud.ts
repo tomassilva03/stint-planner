@@ -26,7 +26,12 @@ export interface CloudRow {
   updated_by: string | null;
 }
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+// Accept the project URL as copied from anywhere in the Supabase dashboard,
+// e.g. with a trailing slash or the REST path (".../rest/v1/").
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)
+  ?.trim()
+  .replace(/\/+$/, '')
+  .replace(/\/(rest|auth)\/v1$/, '');
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const cloud: SupabaseClient | null = url && key ? createClient(url, key) : null;
