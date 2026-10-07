@@ -33,7 +33,8 @@ export class Detector {
   push(s: Sample, now: number): LiveEvent[] {
     const out: LiveEvent[] = [];
     const p = this.prev;
-    if (p && p.sessionNum !== s.sessionNum) this.reset();
+    // A new session: another session number or type, or the session clock jumped back
+    if (p && (p.sessionNum !== s.sessionNum || p.sessionType !== s.sessionType || s.sessionTime < p.sessionTime - 1)) this.reset();
     const prev = this.prev;
     this.last = s;
     const race = s.sessionType === 'Race';
@@ -43,7 +44,8 @@ export class Detector {
     if (!prev) {
       this.prev = s;
       this.lineFuel = s.fuelLevel;
-      if (s.onPitRoad) this.pitEntryAt = null;
+      // We didn't see this lap start (often the race start itself), so it isn't a clean lap
+      this.dirtyLap = true;
       return out;
     }
 
@@ -59,7 +61,8 @@ export class Detector {
     }
     if (!s.onPitRoad && prev.onPitRoad) {
       const stopSec = this.pitEntryAt == null ? null : Math.round((now - this.pitEntryAt) / 100) / 10;
-      if (race) out.push(make('pitExit', { stopSec, stopped: this.stoppedInBox }));
+      // Only a visit whose entry we saw counts as a stop; leaving the garage when joining doesn't
+      if (race) out.push(make('pitExit', { stopSec, stopped: this.stoppedInBox && this.pitEntryAt != null }));
       this.pitEntryAt = null;
       this.stoppedInBox = false;
     }
