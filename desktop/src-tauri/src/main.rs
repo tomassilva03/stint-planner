@@ -18,6 +18,7 @@ use tauri::{
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_updater::UpdaterExt;
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
@@ -152,6 +153,35 @@ fn stop_helper(app: &AppHandle) {
     }
 }
 
+/// Installs a newer version from GitHub if there is one: the installer closes the app,
+/// updates it and opens it again. Offline or no release yet just gets logged.
+async fn update(app: AppHandle) {
+    let result = async {
+        let Some(update) = app.updater()?.check().await? else {
+            return Ok::<_, tauri_plugin_updater::Error>(false);
+        };
+        let bytes = update.download(|_, _| {}, || {}).await?;
+        log(&app, &format!("--- updating to {}", update.version));
+        // The installer replaces the helper's files, so it can't be running
+        stop_helper(&app);
+        update.install(bytes)?;
+        Ok(true)
+    }
+    .await;
+    match result {
+        Ok(true) => app.restart(),
+        Ok(false) => log(&app, "--- no update available"),
+        Err(e) => {
+            log(&app, &format!("--- update failed: {e}"));
+            let state = app.state::<Helper>();
+            let stopped = std::mem::replace(&mut *state.quitting.lock().unwrap(), false);
+            if stopped {
+                start_helper(&app);
+            }
+        }
+    }
+}
+
 fn show_window(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
@@ -183,6 +213,9 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let recordings = MenuItem::with_id(app, "recordings", "Open recordings folder", true, None::<&str>)?;
     let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
     let autostart = CheckMenuItem::with_id(app, "autostart", "Start with Windows", true, autostart_on, None::<&str>)?;
+    let updates = MenuItem::with_id(app, "update", "Check for updates", true, None::<&str>)?;
+    let version = format!("Nightstint {}", app.package_info().version);
+    let about = MenuItem::with_id(app, "version", version, false, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Nightstint", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
@@ -194,6 +227,9 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             &recordings,
             &PredefinedMenuItem::separator(app)?,
             &autostart,
+            &updates,
+            &PredefinedMenuItem::separator(app)?,
+            &about,
             &quit,
         ],
     )?;
@@ -209,6 +245,9 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 start_helper(app);
             }
             "restart" => start_helper(app),
+            "update" => {
+                tauri::async_runtime::spawn(update(app.clone()));
+            }
             "recordings" => {
                 let _ = app.opener().open_path(plain_path(&data_dir(app, "recordings")), None::<&str>);
             }
@@ -238,6 +277,7 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![HIDDEN_ARG])))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Helper::default())
         .setup(|app| {
             let handle = app.handle();
@@ -251,6 +291,7 @@ fn main() {
             open_window(handle, !hidden)?;
             build_tray(handle)?;
             start_helper(handle);
+            tauri::async_runtime::spawn(update(handle.clone()));
             Ok(())
         })
         // Closing the window keeps the helper running in the tray; Quit in the tray stops it
