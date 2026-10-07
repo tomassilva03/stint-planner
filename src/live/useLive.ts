@@ -25,7 +25,14 @@ export interface Live {
 
 const readPref = () => {
   try {
-    return localStorage.getItem(KEY) === 'on';
+    const saved = localStorage.getItem(KEY);
+    if (saved) return saved === 'on';
+    // The desktop app opens the planner with ?live, so drivers are connected without a click
+    if (new URLSearchParams(location.search).has('live')) {
+      localStorage.setItem(KEY, 'on');
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }

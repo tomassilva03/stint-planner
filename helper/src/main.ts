@@ -2,7 +2,8 @@
 //   npm start                 read iRacing
 //   npm run demo              a made-up race, to try the link without iRacing
 //   npm start -- --replay logs/2026-10-07-samples.jsonl   play back a recorded session
-// Options: --port 47100  --origin https://my-site.example  --speed 10  --at 2026-10-11T12:00:00Z  --no-record
+//   npm start -- --check-sdk  exit 0 if the iRacing SDK loads on this PC, 1 if not
+// Options: --port 47100  --origin https://my-site.example  --speed 10  --at 2026-10-11T12:00:00Z  --no-record  --logs <folder>
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { demoRace } from '../../src/live/demo.ts';
@@ -21,7 +22,13 @@ const replay = opt('replay');
 const port = Number(opt('port') ?? LIVE_PORT);
 const origins = [...DEFAULT_ORIGINS, ...args.flatMap((a, i) => (a === '--origin' ? [args[i + 1]] : []))];
 
-const logDir = join(process.cwd(), 'logs');
+if (args.includes('--check-sdk')) {
+  const ok = !!(await loadSdk());
+  console.log(ok ? 'iRacing SDK loaded.' : 'iRacing SDK could not be loaded.');
+  process.exit(ok ? 0 : 1);
+}
+
+const logDir = opt('logs') ?? join(process.cwd(), 'logs');
 mkdirSync(logDir, { recursive: true });
 const day = new Date().toISOString().slice(0, 10);
 const logFile = join(logDir, `${day}-${demo ? 'demo' : replay ? 'replay' : 'race'}.jsonl`);

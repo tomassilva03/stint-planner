@@ -70,9 +70,12 @@ Switch a plan to **League** at the top, then turn rules on under Race setup → 
 
 ## Live data from iRacing (optional)
 
-Run the helper in `helper/` on the driving PC and press **Connect to iRacing** on the Stints tab.
-Each stint's actual end and laps then fill in by themselves when the car leaves the pits, and a
-live strip shows lap times and fuel. See [helper/README.md](helper/README.md).
+Drivers install the **Nightstint desktop app** on the driving PC (see [desktop/README.md](desktop/README.md)).
+It opens the planner in its own window and runs the iRacing helper in the background, so each
+stint's actual end and laps fill in by themselves when the car leaves the pits, and a live strip
+on the Stints tab shows lap times and fuel. Teammates who don't drive keep using the website.
+
+Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
 
 ## Accounts and sharing (optional)
 

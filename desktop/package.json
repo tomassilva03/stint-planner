@@ -1,0 +1,16 @@
+{
+  "name": "nightstint-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Windows app for drivers: Nightstint in its own window, with the iRacing helper built in.",
+  "type": "module",
+  "scripts": {
+    "prepare-helper": "node scripts/prepare-helper.mjs",
+    "tauri": "tauri",
+    "dev": "node scripts/prepare-helper.mjs && tauri dev",
+    "build": "node scripts/prepare-helper.mjs && tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.0"
+  }
+}

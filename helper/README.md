@@ -7,6 +7,10 @@ recalculates.
 
 Windows only, because the iRacing SDK only exists there.
 
+**Drivers: install the Nightstint desktop app instead** ([desktop/README.md](../desktop/README.md)).
+It has this helper built in and starts it for you. The steps below are for running the helper by
+hand, for example while working on it.
+
 ## First time
 
 1. Install Node.js 18 or newer (LTS) from https://nodejs.org.

@@ -9,6 +9,9 @@ const IN_PIT_STALL = 1;
 
 export async function loadSdk(): Promise<SdkModule | null> {
   try {
+    // irsdk-node quietly falls back to made-up data when its Windows module can't load; treat that as no SDK
+    const native = await import('@irsdk-node/native');
+    if (native.sdkIsMocked) return null;
     return await import('irsdk-node');
   } catch {
     return null;
