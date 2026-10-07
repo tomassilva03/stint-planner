@@ -9,7 +9,7 @@ export function LiveStrip({ live, readOnly, drivers }: { live: Live; readOnly: b
   const { status, state: s } = live;
   if (status === 'off') {
     return (
-      <div className="live-strip off">
+      <div className="live-strip is-off">
         <span className="live-dot" aria-hidden />
         <span>
           Driving? Run the iRacing helper on this PC and the actual end and laps of each stint fill in by themselves.
@@ -24,7 +24,7 @@ export function LiveStrip({ live, readOnly, drivers }: { live: Live; readOnly: b
   const label =
     status === 'live' ? (live.source === 'demo' ? 'Live (demo race)' : 'Live') : status === 'waiting' ? 'Helper running, waiting for iRacing' : 'Looking for the helper on this PC…';
   return (
-    <div className={`live-strip ${status}`} role="status" aria-live="polite">
+    <div className={`live-strip is-${status}`} role="status" aria-live="polite">
       <span className="live-dot" aria-hidden />
       <strong className="live-label">{label}</strong>
       {status === 'live' && s && (
