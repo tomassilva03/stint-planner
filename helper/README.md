@@ -48,7 +48,8 @@ Use a copy of your plan for this, since the demo fills in real actual ends.
 
 - `--port 47100` change the local port (the planner expects 47100).
 - `--origin https://your-site.example` allow the planner hosted at another address to connect.
-  The hosted site and `localhost` are allowed already; other websites are refused.
+  The hosted site, its Vercel preview builds and `localhost` are allowed already; other websites
+  are refused.
 
 Every race event is also written to `logs/<date>-race.jsonl`, so nothing is lost if the browser
 is closed.
