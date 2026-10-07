@@ -19,7 +19,7 @@
     ],
     "publisher": "Tomás Silva",
     "shortDescription": "Nightstint",
-    "longDescription": "Nightstint for drivers: the planner in its own window, with the iRacing helper built in.",
+    "longDescription": "Nightstint for drivers: the iRacing helper in the tray, feeding live data to the planner.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -1,5 +1,5 @@
-// Nightstint for drivers: opens the planner in its own window and runs the iRacing
-// helper (helper/, bundled with its own Node) in the background, with a tray icon.
+// Nightstint for drivers: runs the iRacing helper (helper/, bundled with its own Node)
+// in the background with a tray icon. The planner itself stays in the browser.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{
@@ -14,7 +14,7 @@ use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
     path::BaseDirectory,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, RunEvent, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    AppHandle, Manager, RunEvent, Url,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_opener::OpenerExt;
@@ -182,28 +182,11 @@ async fn update(app: AppHandle) {
     }
 }
 
-fn show_window(app: &AppHandle) {
-    if let Some(w) = app.get_webview_window("main") {
-        let _ = w.unminimize();
-        let _ = w.show();
-        let _ = w.set_focus();
+/// Opens the planner in the default browser; `?live` connects it to the helper
+fn open_planner(app: &AppHandle) {
+    if let Err(e) = app.opener().open_url(planner_url().as_str(), None::<&str>) {
+        log(app, &format!("Couldn't open the browser: {e}"));
     }
-}
-
-fn open_window(app: &AppHandle, visible: bool) -> tauri::Result<()> {
-    let url = planner_url();
-    let preview = url.origin().ascii_serialization() != PRODUCTION_ORIGIN;
-    WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
-        .title(if preview { "Nightstint (preview)" } else { "Nightstint" })
-        .inner_size(1440.0, 900.0)
-        .min_inner_size(900.0, 600.0)
-        .visible(visible)
-        // Tauri's defaults, plus: let the site reach the helper on this PC without a prompt
-        .additional_browser_args(
-            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights",
-        )
-        .build()?;
-    Ok(())
 }
 
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
@@ -239,7 +222,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id().as_ref() {
-            "open" => show_window(app),
+            "open" => open_planner(app),
             "demo" => {
                 *app.state::<Helper>().demo.lock().unwrap() = demo.is_checked().unwrap_or(false);
                 start_helper(app);
@@ -260,7 +243,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         })
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
-                show_window(tray.app_handle());
+                open_planner(tray.app_handle());
             }
         });
     if let Some(icon) = app.default_window_icon() {
@@ -272,8 +255,8 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 
 fn main() {
     tauri::Builder::default()
-        // A second launch just brings the open window forward (only one helper can use the port)
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_window(app)))
+        // A second launch just opens the planner (only one helper can use the port)
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| open_planner(app)))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![HIDDEN_ARG])))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
@@ -287,25 +270,21 @@ fn main() {
                 let _ = handle.autolaunch().enable();
                 let _ = fs::write(&marker, "");
             }
-            let hidden = std::env::args().any(|a| a == HIDDEN_ARG);
-            open_window(handle, !hidden)?;
             build_tray(handle)?;
             start_helper(handle);
             tauri::async_runtime::spawn(update(handle.clone()));
-            Ok(())
-        })
-        // Closing the window keeps the helper running in the tray; Quit in the tray stops it
-        .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window.hide();
+            // Started by hand rather than by Windows at sign-in: show the planner
+            if !std::env::args().any(|a| a == HIDDEN_ARG) {
+                open_planner(handle);
             }
+            Ok(())
         })
         .build(tauri::generate_context!())
         .expect("error while starting Nightstint")
-        .run(|app, event| {
-            if let RunEvent::Exit = event {
-                stop_helper(app);
-            }
+        .run(|app, event| match event {
+            // There are no windows; only Quit in the tray (an explicit exit code) ends the app
+            RunEvent::ExitRequested { code: None, api, .. } => api.prevent_exit(),
+            RunEvent::Exit => stop_helper(app),
+            _ => {}
         });
 }

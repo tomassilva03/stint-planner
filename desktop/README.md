@@ -1,8 +1,9 @@
 # Nightstint desktop app (Windows)
 
-One program for the driving PC. It opens Nightstint in its own window and runs the iRacing helper
-in the background, so the Stints tab fills in actual ends and laps by itself and shows the live
-strip. Teammates who don't drive keep using the website; it's the same site, plans and sign-in.
+One small program for the driving PC. It runs the iRacing helper in the background, with an icon
+in the tray, so Nightstint in your browser fills in actual ends and laps by itself and shows the
+live strip on the Stints tab. It has no window of its own: the planner is the website, for
+drivers and teammates alike.
 
 ## Install
 
@@ -10,16 +11,17 @@ strip. Teammates who don't drive keep using the website; it's the same site, pla
    https://github.com/tomassilva03/stint-planner/releases/latest
 2. Windows may say it protected your PC, because the installer isn't signed. Choose
    **More info → Run anyway**.
-3. Nightstint opens. Sign in as on the website. The planner connects to the helper by itself.
+3. Nightstint opens in your browser and connects to the helper by itself. If the browser asks
+   whether the site may access devices on your local network, allow it: that's the helper.
 
-It installs for your Windows user only (no admin needed) and starts with Windows, waiting in the
-tray. Closing the window keeps it running there, so live data keeps flowing while you drive.
+It installs for your Windows user only (no admin needed) and starts with Windows, quietly in the
+tray, so the helper is always ready when you drive.
 
 ## Tray menu
 
 Right-click the moon icon near the clock:
 
-- **Open Nightstint** brings the window back (so does a left click).
+- **Open Nightstint** opens the planner in your browser (so does a left click on the icon).
 - **Demo race (no iRacing)** plays a made-up race, to try everything without driving.
 - **Restart iRacing helper** if something looks stuck.
 - **Open recordings folder** has each session's readings (`<date>-samples.jsonl`) and events.
@@ -32,13 +34,11 @@ The helper's own messages are in `%LOCALAPPDATA%\com.nightstint.desktop\logs\hel
 
 ## Which site it opens
 
-The app shows the live site, https://stint-planner-three.vercel.app, so website updates reach it
-straight away.
-
-Every installer, including ones built from a pull request, opens the live site. (Vercel previews
-ask for a Vercel login, which teammates don't have.) To point the app somewhere else, start it
-with the `NIGHTSTINT_URL` environment variable set, e.g. `http://localhost:5173` or a preview
-address; the title then says **(preview)**.
+**Open Nightstint** opens the live site, https://stint-planner-three.vercel.app, with `?live` so
+the page connects to the helper without a click. Every installer does this, including ones built
+from a pull request. To use another address, e.g. `http://localhost:5173` or a Vercel preview,
+start the app with the `NIGHTSTINT_URL` environment variable set; the helper then accepts that
+site too.
 
 ## Updates
 
