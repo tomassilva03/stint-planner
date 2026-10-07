@@ -1,4 +1,4 @@
-# Stint Planner
+# Nightstint
 
 A web app for planning iRacing endurance races, solo or as a team. It replaces the
 Sassy Enduro Manager spreadsheet: stint timing from fuel and lap time, time-of-day and
