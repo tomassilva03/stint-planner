@@ -44,7 +44,7 @@ version you have.
 
 Updates are signed, and the app only accepts ones signed with the project's key. The public half
 is in `src-tauri/tauri.conf.json`; the private half is the `TAURI_SIGNING_PRIVATE_KEY` repository
-secret. Without that secret, builds still work but no release is published.
+secret, with its password (if it has one) in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Without that secret, builds still work but no release is published.
 
 Every installer, including ones built from a pull request, opens the live site. (Vercel previews
 ask for a Vercel login, which teammates don't have.) To point the app somewhere else, start it
