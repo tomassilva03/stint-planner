@@ -123,9 +123,8 @@ Run the same thing locally before pushing with `npm test && npm run build`.
 Vercel does the deploying: each pull request gets its own preview link (Vercel posts it on the PR),
 and merging to `main` updates https://stint-planner-three.vercel.app/. For sign-in to work on preview
 links, the two `VITE_SUPABASE_...` variables must be enabled for **Preview** in Vercel, and Supabase's
-Redirect URLs need your preview address pattern, e.g.
-`https://stint-planner-*-<your-vercel-team>.vercel.app/**` (copy the ending from any preview link; don't
-use a bare `*.vercel.app`, which would let any Vercel site receive sign-ins).
+Redirect URLs need `https://stint-planner-*-tomassilva03s-projects.vercel.app/**` (don't use a bare
+`*.vercel.app`, which would let any Vercel site receive sign-ins).
 
 To stop anything reaching `main` with red checks, in GitHub go to **Settings → Branches → Add branch
 ruleset** (or classic rule) for `main`, require a pull request, and require the status checks
