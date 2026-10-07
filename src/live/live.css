@@ -1,0 +1,21 @@
+/* Live strip on the Stints tab. Kept in its own file so it travels with src/live. */
+.live-strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  margin: 0 0 12px; padding: 10px 14px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius);
+  font-size: 14px;
+}
+.live-strip .btn:last-child { margin-left: auto; }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+.live-strip.live .live-dot { background: var(--open); box-shadow: 0 0 0 3px var(--open-soft); }
+.live-strip.waiting .live-dot, .live-strip.connecting .live-dot { background: var(--tent); }
+.live-label { font-weight: 600; }
+.live-values { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; }
+.live-item { display: flex; gap: 6px; align-items: baseline; }
+.live-item dt { color: var(--muted); font-size: 12px; }
+.live-item dd { margin: 0; font-weight: 600; }
+.live-flag {
+  padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: var(--tent-soft); color: var(--ink); border: 1px solid var(--tent);
+}
+.live-flag.pit { background: var(--accent-soft); border-color: var(--accent); }

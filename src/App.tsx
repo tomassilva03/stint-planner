@@ -13,6 +13,7 @@ import { Notes } from './views/Notes';
 import { Overview } from './views/Overview';
 import { Setup } from './views/Setup';
 import { Stints } from './views/Stints';
+import { useLive } from './live/useLive';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -61,6 +62,7 @@ export default function App() {
   }, [notice]);
 
   const calc = useMemo(() => compute(plan), [plan]);
+  const live = useLive(plan, update, cloud.readOnly);
   const team = plan.mode === 'team';
   const visibleTabs = TABS.filter((t) => !t.team || team);
   const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : 'overview';
@@ -248,7 +250,7 @@ export default function App() {
             case 'availability':
               return <Availability {...props} />;
             case 'stints':
-              return <Stints {...props} />;
+              return <Stints {...props} live={live} readOnly={cloud.readOnly} />;
             case 'notes':
               return <Notes {...props} />;
             default:

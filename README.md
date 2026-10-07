@@ -68,6 +68,12 @@ Switch a plan to **League** at the top, then turn rules on under Race setup → 
   the car in one go (back-to-back stints count together). Auto-assign respects the last one.
 - **Minimum pit stops**: warns when the plan has fewer stops than required.
 
+## Live data from iRacing (optional)
+
+Run the helper in `helper/` on the driving PC and press **Connect to iRacing** on the Stints tab.
+Each stint's actual end and laps then fill in by themselves when the car leaves the pits, and a
+live strip shows lap times and fuel. See [helper/README.md](helper/README.md).
+
 ## Accounts and sharing (optional)
 
 Without this the app works exactly as before and keeps plans in your browser. With it, you sign in
