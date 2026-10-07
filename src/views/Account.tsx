@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { cloudConfigured, listMembers, removeMember, setMember, signInWithEmail, signInWithGoogle, type Member } from '../cloud';
 import type { Plan } from '../model';
 import type { usePlans } from '../store';
-import { Pill } from '../ui';
+import { Pill, Select } from '../ui';
+
+const ROLE_OPTIONS: { value: Member['role']; label: string }[] = [
+  { value: 'editor', label: 'Can edit' },
+  { value: 'viewer', label: 'Can view' },
+];
 
 type CloudApi = ReturnType<typeof usePlans>['cloud'];
 
@@ -156,10 +161,7 @@ function SharePanel({ planId, onClose }: { planId: string; onClose: () => void }
         }}
       >
         <input id="share-email" aria-label="Teammate's email" className="input" type="email" required placeholder="teammate@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <select id="share-role" aria-label="Access" className="input" value={role} onChange={(e) => setRole(e.target.value as Member['role'])}>
-          <option value="editor">Can edit</option>
-          <option value="viewer">Can view</option>
-        </select>
+        <Select<Member['role']> id="share-role" ariaLabel="Access" className="input" value={role} onChange={setRole} options={ROLE_OPTIONS} />
         <button className="btn primary" type="submit">
           Add
         </button>
@@ -170,15 +172,14 @@ function SharePanel({ planId, onClose }: { planId: string; onClose: () => void }
         {members.map((m) => (
           <li key={m.email}>
             <span>{m.email}</span>
-            <select
-              aria-label={`Access for ${m.email}`}
+            <Select<Member['role']>
+              id={`role-${m.email}`}
+              ariaLabel={`Access for ${m.email}`}
               className="input"
               value={m.role}
-              onChange={(e) => setMember(planId, m.email, e.target.value as Member['role']).then(load, (err) => setError(err.message))}
-            >
-              <option value="editor">Can edit</option>
-              <option value="viewer">Can view</option>
-            </select>
+              onChange={(v) => setMember(planId, m.email, v).then(load, (err) => setError(err.message))}
+              options={ROLE_OPTIONS}
+            />
             <button className="icon-btn" aria-label={`Remove ${m.email}`} onClick={() => removeMember(planId, m.email).then(load, (err) => setError(err.message))}>
               ×
             </button>

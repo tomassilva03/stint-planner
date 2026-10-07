@@ -5,7 +5,7 @@ import { samplePlan } from './sample';
 import { nurburgringPlan } from './samples/nurburgring';
 import { usePlans } from './store';
 import { offsetLabel } from './time';
-import { Field } from './ui';
+import { BrandMark, Check, Chevron, Field, Select } from './ui';
 import { AccountMenu, CloudBar } from './views/Account';
 import { Availability } from './views/Availability';
 import { Drivers } from './views/Drivers';
@@ -23,6 +23,25 @@ const TABS = [
   { id: 'stints', label: 'Stints' },
   { id: 'notes', label: 'Notes' },
 ];
+
+const THEMES = ['auto', 'dark', 'light'] as const;
+
+function ThemeIcon({ theme }: { theme: string }) {
+  if (theme === 'dark') return <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 1 1 9.4 3.5a7 7 0 0 0 11.1 11.1Z" fill="currentColor" /></svg>;
+  if (theme === 'light')
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="4" fill="currentColor" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </svg>
+    );
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor" />
+    </svg>
+  );
+}
 
 function readPref(key: string, fallback: string) {
   try {
@@ -43,11 +62,26 @@ export default function App() {
   const { plans, plan, update, add, remove, select, cloud } = usePlans();
   const [tab, setTab] = useState(() => readPref('enduro-planner.tab', 'overview'));
   const [zone, setZone] = useState(() => readPref('enduro-planner.zone', 'utc'));
+  const [theme, setTheme] = useState(() => readPref('enduro-planner.theme', 'auto'));
   const [now, setNow] = useState(Date.now());
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [notice, setNotice] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !menuRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [menu]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 15_000);
@@ -55,6 +89,11 @@ export default function App() {
   }, []);
   useEffect(() => writePref('enduro-planner.tab', tab), [tab]);
   useEffect(() => writePref('enduro-planner.zone', zone), [zone]);
+  useEffect(() => {
+    writePref('enduro-planner.theme', theme);
+    if (theme === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+  }, [theme]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(''), 3500);
@@ -115,25 +154,24 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          <span>Stint Planner</span>
+          <BrandMark />
+          <span>Nightstint</span>
         </div>
-        <div className="plan-picker">
-          <label htmlFor="plan-select" className="sr-only">
-            Race plan
-          </label>
-          <select id="plan-select" className="input" value={plan.id} onChange={(e) => select(e.target.value)}>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <button className="btn" aria-expanded={menu} onClick={() => (setMenu(!menu), setConfirmDelete(false))}>
-            Plans
+        <div className="plan-picker" ref={menuRef}>
+          <button className="plan-button" aria-haspopup="menu" aria-expanded={menu} onClick={() => (setMenu(!menu), setConfirmDelete(false))}>
+            <span className="plan-button-name">{plan.name}</span>
+            <Chevron />
           </button>
           {menu && (
-            <div className="menu" role="menu">
+            <div className="menu plan-menu" role="menu">
+              <div className="menu-label">Your plans</div>
+              {plans.map((p) => (
+                <button key={p.id} role="menuitemradio" aria-checked={p.id === plan.id} className="menu-option" onClick={() => (select(p.id), setMenu(false))}>
+                  <span>{p.name}</span>
+                  {p.id === plan.id && <Check />}
+                </button>
+              ))}
+              <hr />
               <button role="menuitem" onClick={() => (add(newPlan('team')), setMenu(false))}>
                 New team race
               </button>
@@ -182,20 +220,28 @@ export default function App() {
           />
         </div>
         <AccountMenu cloud={cloud} />
+        <button
+          className="btn theme-btn"
+          title={theme === 'dark' ? 'Dark theme' : theme === 'light' ? 'Light theme' : 'Theme follows your system'}
+          onClick={() => setTheme(THEMES[(THEMES.indexOf(theme as (typeof THEMES)[number]) + 1) % THEMES.length])}
+        >
+          <ThemeIcon theme={theme} />
+          <span className="sr-only">Theme: {theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'follow system'}</span>
+        </button>
         <div className="zone">
-          <label htmlFor="zone-select">Show times in</label>
-          <select id="zone-select" className="input" value={effectiveZone} onChange={(e) => setZone(e.target.value)}>
-            <option value="utc">GMT</option>
-            <option value="device">My local time</option>
-            {team &&
-              plan.drivers
-                .filter((d) => d.name.trim())
-                .map((d) => (
-                  <option key={d.id} value={`driver:${d.id}`}>
-                    {d.name} ({offsetLabel(d.utcOffset * 60)})
-                  </option>
-                ))}
-          </select>
+          <label htmlFor="zone-select">Times in</label>
+          <Select
+            id="zone-select"
+            value={effectiveZone}
+            onChange={setZone}
+            options={[
+              { value: 'utc', label: 'GMT' },
+              { value: 'device', label: 'My local time' },
+              ...(team
+                ? plan.drivers.filter((d) => d.name.trim()).map((d) => ({ value: `driver:${d.id}`, label: `${d.name} (${offsetLabel(d.utcOffset * 60)})` }))
+                : []),
+            ]}
+          />
         </div>
       </header>
 

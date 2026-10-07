@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { autoAssign, blankStint, spreadSafetyCars, type StintCalc } from '../engine';
 import type { Plan, StintType } from '../model';
 import { clock, dateLabel, delta, duration, lapTime, parseClockNear, parseDurationText, shortDuration, simClock } from '../time';
-import { AVAIL_LABEL, Field, NumberField, Pill } from '../ui';
+import { AVAIL_LABEL, Field, NumberField, Pill, Select } from '../ui';
 import { LiveStrip } from '../live/LiveStrip';
 import type { Live } from '../live/useLive';
 import type { ViewProps } from './Overview';
@@ -94,33 +94,28 @@ export function Stints({ plan, calc, update, tz, tzName, now, live, readOnly }: 
                   </td>
                   {team && (
                     <td>
-                      <select
+                      <Select
                         id={`st-driver-${s.stint.id}`}
-                        aria-label={`Driver for stint ${s.index}`}
+                        ariaLabel={`Driver for stint ${s.index}`}
                         className={`input ${s.stint.driverId ? '' : 'needs'}`}
                         value={s.stint.driverId ?? ''}
-                        onChange={(e) => set((p) => void (p.stints[i].driverId = e.target.value || null))}
-                      >
-                        <option value="">Select driver</option>
-                        {drivers.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => set((p) => void (p.stints[i].driverId = v || null))}
+                        options={[{ value: '', label: 'Select driver' }, ...drivers.map((d) => ({ value: d.id, label: d.name }))]}
+                      />
                     </td>
                   )}
                   <td>
-                    <select
+                    <Select<StintType>
                       id={`st-type-${s.stint.id}`}
-                      aria-label={`Pace for stint ${s.index}`}
+                      ariaLabel={`Pace for stint ${s.index}`}
                       className="input"
                       value={s.stint.type}
-                      onChange={(e) => set((p) => void (p.stints[i].type = e.target.value as StintType))}
-                    >
-                      <option value="standard">Standard</option>
-                      <option value="save">Fuel save</option>
-                    </select>
+                      onChange={(v) => set((p) => void (p.stints[i].type = v))}
+                      options={[
+                        { value: 'standard', label: 'Standard' },
+                        { value: 'save', label: 'Fuel save' },
+                      ]}
+                    />
                   </td>
                   <td>
                     {!s.isFinal && (

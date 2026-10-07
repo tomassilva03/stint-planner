@@ -1,4 +1,4 @@
-# Stint Planner
+# Nightstint
 
 A web app for planning iRacing endurance races, solo or as a team. It replaces the
 Sassy Enduro Manager spreadsheet: stint timing from fuel and lap time, time-of-day and
@@ -118,3 +118,24 @@ change it.
 - If you lose connection mid-race, keep editing. Changes save automatically when you're back online.
 - If two people edit the same plan at the same moment, the last save wins for the whole plan.
 - iRacing sign-in needs iRacing to approve this app for their login. It will be added once that's done.
+
+## Checks and deploys
+
+Every pull request and every push to `main` runs the checks in `.github/workflows/ci.yml` on GitHub:
+
+- **Typecheck, test and build**: `tsc`, the Vitest tests, the normal build and the one-file build.
+- **Database schema applies**: runs `supabase/schema.sql` twice on a fresh Postgres 16, so a broken or
+  non-rerunnable schema change shows up before it reaches Supabase.
+
+Run the same thing locally before pushing with `npm test && npm run build`.
+
+Vercel does the deploying: each pull request gets its own preview link (Vercel posts it on the PR),
+and merging to `main` updates https://stint-planner-three.vercel.app/. For sign-in to work on preview
+links, the two `VITE_SUPABASE_...` variables must be enabled for **Preview** in Vercel, and Supabase's
+Redirect URLs need `https://stint-planner-*-tomassilva03s-projects.vercel.app/**` (don't use a bare
+`*.vercel.app`, which would let any Vercel site receive sign-ins).
+
+To stop anything reaching `main` with red checks, in GitHub go to **Settings → Branches → Add branch
+ruleset** (or classic rule) for `main`, require a pull request, and require the status checks
+**Typecheck, test and build** and **Database schema applies**. The checks appear in the picker after
+they have run once.
