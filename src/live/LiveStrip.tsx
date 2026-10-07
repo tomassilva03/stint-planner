@@ -1,9 +1,11 @@
 // The live strip on top of the Stints tab: link status and what the car is doing now.
+import type { Driver } from '../model';
 import { duration, lapTime } from '../time';
+import { displayName } from './names';
 import type { Live } from './useLive';
 import './live.css';
 
-export function LiveStrip({ live, readOnly }: { live: Live; readOnly: boolean }) {
+export function LiveStrip({ live, readOnly, drivers }: { live: Live; readOnly: boolean; drivers: Driver[] }) {
   const { status, state: s } = live;
   if (status === 'off') {
     return (
@@ -29,7 +31,7 @@ export function LiveStrip({ live, readOnly }: { live: Live; readOnly: boolean })
         <dl className="live-values">
           {s.caution && <span className="live-flag">Caution</span>}
           {s.onPitRoad && <span className="live-flag pit">In pits</span>}
-          {s.driverName && <Item k="Driver" v={s.driverName} />}
+          {s.driverName && <Item k="Driver" v={displayName(s.driverName, drivers)} />}
           <Item k="Lap" v={String(s.lapsCompleted)} />
           <Item k="Last lap" v={s.lastLapTime ? lapTime(s.lastLapTime) : '–'} mono />
           <Item k="Avg" v={s.avgLapTime ? lapTime(s.avgLapTime) : '–'} mono />

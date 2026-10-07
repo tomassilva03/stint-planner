@@ -28,7 +28,7 @@ export function Stints({ plan, calc, update, tz, tzName, now, live, readOnly }: 
         <h2>Stint plan</h2>
         <span className="muted">Times in {tzName}</span>
       </div>
-      {live && <LiveStrip live={live} readOnly={!!readOnly} />}
+      {live && <LiveStrip live={live} readOnly={!!readOnly} drivers={plan.drivers} />}
       <div className="toolbar">
         {team && (
           <>

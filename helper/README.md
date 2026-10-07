@@ -53,3 +53,16 @@ Use a copy of your plan for this, since the demo fills in real actual ends.
 
 Every race event is also written to `logs/<date>-race.jsonl`, so nothing is lost if the browser
 is closed.
+
+## Recording a session to check later
+
+While it runs on iRacing, the helper also records its readings to `logs/<date>-samples.jsonl`
+(roughly 30 MB for a 24-hour race; turn it off with `--no-record`). To check what the planner
+would do with a session, play it back:
+
+```
+npm start -- --replay logs/2026-10-07-samples.jsonl --speed 20
+```
+
+Names with accents: iRacing hands over names like "Tomás" with the accent lost. The planner
+shows the name as spelled in the plan's Drivers tab when it matches.

@@ -76,15 +76,15 @@ export class Detector {
 
     // Laps: wait for the new lap time, then emit
     if (this.pending && (s.lastLapTime !== prev.lastLapTime || s.sessionTime - this.pending.sessionTime >= LAP_TIME_WAIT_SEC)) {
-      out.push(this.finishLap(s, race));
+      out.push(this.finishLap(s));
     }
     if (s.lapsCompleted > prev.lapsCompleted) {
-      if (this.pending) out.push(this.finishLap(prev, race));
+      if (this.pending) out.push(this.finishLap(prev));
       const fuelUsed = this.lineFuel != null && s.fuelLevel != null ? this.lineFuel - s.fuelLevel : null;
       this.pending = { laps: s.lapsCompleted, at: now, sessionTime: s.sessionTime, fuel: fuelUsed, green: !this.dirtyLap && s.lapsCompleted - prev.lapsCompleted === 1 };
       this.lineFuel = s.fuelLevel;
       this.dirtyLap = s.onPitRoad || caution;
-      if (s.lastLapTime !== prev.lastLapTime) out.push(this.finishLap(s, race));
+      if (s.lastLapTime !== prev.lastLapTime) out.push(this.finishLap(s));
     }
 
     this.prev = s;
@@ -92,12 +92,12 @@ export class Detector {
     return out;
   }
 
-  private finishLap(s: Sample, race: boolean): LiveEvent {
+  private finishLap(s: Sample): LiveEvent {
     const l = this.pending!;
     this.pending = null;
     const lapTime = s.lastLapTime > 0 ? s.lastLapTime : null;
     const fuelUsed = l.fuel != null && l.fuel > 0 ? Math.round(l.fuel * 1000) / 1000 : null;
-    if (l.green && race) {
+    if (l.green) {
       if (lapTime) this.greenLaps = [...this.greenLaps, lapTime].slice(-AVG_LAPS);
       if (fuelUsed) this.greenFuel = [...this.greenFuel, fuelUsed].slice(-AVG_LAPS);
     }

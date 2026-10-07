@@ -1,8 +1,9 @@
 // Stint planner helper: run this on the PC that is driving.
 //   npm start                 read iRacing
 //   npm run demo              a made-up race, to try the link without iRacing
-// Options: --port 47100  --origin https://my-site.example  --speed 10  --at 2026-10-11T12:00:00Z
-import { appendFileSync, mkdirSync } from 'node:fs';
+//   npm start -- --replay logs/2026-10-07-samples.jsonl   play back a recorded session
+// Options: --port 47100  --origin https://my-site.example  --speed 10  --at 2026-10-11T12:00:00Z  --no-record
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { demoRace } from '../../src/live/demo.ts';
 import { Detector } from '../../src/live/detector.ts';
@@ -16,12 +17,18 @@ const opt = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const demo = args.includes('--demo');
+const replay = opt('replay');
 const port = Number(opt('port') ?? LIVE_PORT);
 const origins = [...DEFAULT_ORIGINS, ...args.flatMap((a, i) => (a === '--origin' ? [args[i + 1]] : []))];
 
 const logDir = join(process.cwd(), 'logs');
 mkdirSync(logDir, { recursive: true });
-const logFile = join(logDir, `${new Date().toISOString().slice(0, 10)}-${demo ? 'demo' : 'race'}.jsonl`);
+const day = new Date().toISOString().slice(0, 10);
+const logFile = join(logDir, `${day}-${demo ? 'demo' : replay ? 'replay' : 'race'}.jsonl`);
+// Raw readings, so a session can be played back later to check or debug the planner
+const record = !demo && !replay && !args.includes('--no-record');
+const sampleFile = join(logDir, `${day}-samples.jsonl`);
+let lastRecorded: { at: number; key: string } | null = null;
 
 const detector = new Detector();
 let waiting = true;
@@ -35,6 +42,7 @@ server.wss.on('listening', () => {
   console.log(`Stint planner helper is running${demo ? ' (demo race)' : ''}.`);
   console.log(`Open the planner in your browser; it connects to ws://localhost:${port} by itself.`);
   console.log(`Race events are logged to ${logFile}`);
+  if (record) console.log(`Readings are recorded to ${sampleFile} (send this file to check a session)`);
   console.log('Leave this window open while you drive. Press Ctrl+C to stop.\n');
 });
 server.wss.on('error', (e: NodeJS.ErrnoException) => {
@@ -59,7 +67,16 @@ const describe = (e: LiveEvent) => {
   }
 };
 
+/** Writes a reading when something that matters changed, and otherwise once a second */
+function recordSample(sample: Sample, now: number) {
+  const key = [sample.sessionNum, sample.lapsCompleted, sample.lastLapTime, sample.onPitRoad, sample.inPitStall, sample.flags, sample.driverName].join('|');
+  if (lastRecorded && lastRecorded.key === key && now - lastRecorded.at < 1000) return;
+  lastRecorded = { at: now, key };
+  appendFileSync(sampleFile, JSON.stringify({ at: now, s: sample }) + '\n');
+}
+
 function handle(sample: Sample, now: number) {
+  if (record) recordSample(sample, now);
   if (waiting) {
     waiting = false;
     console.log(`Connected to ${sample.track || 'the session'}${sample.car ? `, ${sample.car}` : ''}.`);
@@ -121,4 +138,15 @@ async function runIRacing() {
   }
 }
 
-void (demo ? runDemo() : runIRacing());
+async function runReplay(file: string) {
+  const speed = Number(opt('speed') ?? 0);
+  const rows = readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as { at: number; s: Sample });
+  console.log(`Playing back ${rows.length} readings from ${file}${speed ? ` at ${speed}x` : ''}.`);
+  for (let i = 0; i < rows.length; i++) {
+    handle(rows[i].s, rows[i].at);
+    if (speed && i + 1 < rows.length) await sleep((rows[i + 1].at - rows[i].at) / speed);
+  }
+  console.log('Playback finished. Press Ctrl+C to stop.');
+}
+
+void (replay ? runReplay(replay) : demo ? runDemo() : runIRacing());
