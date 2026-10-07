@@ -85,7 +85,7 @@ export function Pill(props: { tone: 'open' | 'tentative' | 'blocked' | 'unknown'
 
 export const AVAIL_LABEL = { open: 'Open', tentative: 'Tentative', blocked: 'Blocked', unknown: 'No info' } as const;
 
-/** Nightshift mark: a crescent moon, drawn in the text colour. */
+/** Nightstint mark: a crescent moon, drawn in the text colour. */
 export function BrandMark({ size = 20 }: { size?: number }) {
   return (
     <svg className="brand-mark" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
