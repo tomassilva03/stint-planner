@@ -5,7 +5,7 @@ import { samplePlan } from './sample';
 import { nurburgringPlan } from './samples/nurburgring';
 import { usePlans } from './store';
 import { offsetLabel } from './time';
-import { BrandMark, Field } from './ui';
+import { BrandMark, Check, Chevron, Field, Select } from './ui';
 import { AccountMenu, CloudBar } from './views/Account';
 import { Availability } from './views/Availability';
 import { Drivers } from './views/Drivers';
@@ -158,21 +158,15 @@ export default function App() {
         <div className="plan-picker" ref={menuRef}>
           <button className="plan-button" aria-haspopup="menu" aria-expanded={menu} onClick={() => (setMenu(!menu), setConfirmDelete(false))}>
             <span className="plan-button-name">{plan.name}</span>
-            <svg width="10" height="6" viewBox="0 0 10 6" aria-hidden="true">
-              <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Chevron />
           </button>
           {menu && (
             <div className="menu plan-menu" role="menu">
               <div className="menu-label">Your plans</div>
               {plans.map((p) => (
-                <button key={p.id} role="menuitemradio" aria-checked={p.id === plan.id} className="plan-item" onClick={() => (select(p.id), setMenu(false))}>
+                <button key={p.id} role="menuitemradio" aria-checked={p.id === plan.id} className="menu-option" onClick={() => (select(p.id), setMenu(false))}>
                   <span>{p.name}</span>
-                  {p.id === plan.id && (
-                    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
-                      <path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  {p.id === plan.id && <Check />}
                 </button>
               ))}
               <hr />
@@ -234,18 +228,18 @@ export default function App() {
         </button>
         <div className="zone">
           <label htmlFor="zone-select">Times in</label>
-          <select id="zone-select" className="input" value={effectiveZone} onChange={(e) => setZone(e.target.value)}>
-            <option value="utc">GMT</option>
-            <option value="device">My local time</option>
-            {team &&
-              plan.drivers
-                .filter((d) => d.name.trim())
-                .map((d) => (
-                  <option key={d.id} value={`driver:${d.id}`}>
-                    {d.name} ({offsetLabel(d.utcOffset * 60)})
-                  </option>
-                ))}
-          </select>
+          <Select
+            id="zone-select"
+            value={effectiveZone}
+            onChange={setZone}
+            options={[
+              { value: 'utc', label: 'GMT' },
+              { value: 'device', label: 'My local time' },
+              ...(team
+                ? plan.drivers.filter((d) => d.name.trim()).map((d) => ({ value: `driver:${d.id}`, label: `${d.name} (${offsetLabel(d.utcOffset * 60)})` }))
+                : []),
+            ]}
+          />
         </div>
       </header>
 

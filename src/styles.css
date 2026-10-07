@@ -23,7 +23,6 @@
   --block-soft: #fbe3e3;
   --none: #ecece8;
   --hover: rgba(0, 0, 0, 0.05);
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888884' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --font-display: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
@@ -109,27 +108,38 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand { display: flex; align-items: center; gap: 8px; font: 600 17px/1 var(--font-display); }
 .brand-mark { flex: none; display: block; }
 .plan-picker { position: relative; display: flex; align-items: center; gap: 2px; flex: 1 1 260px; min-width: 0; }
-.plan-picker select { min-width: 0; max-width: 380px; }
 .zone { display: flex; align-items: center; gap: 2px; }
 /* Top bar controls read as text until you point at them. */
-.topbar .account > .btn, .topbar > .btn, .topbar .zone select {
+.topbar .account > .btn, .topbar > .btn, .topbar .zone .select {
   border-color: transparent; background-color: transparent;
 }
-.topbar .account > .btn:hover, .topbar > .btn:hover, .topbar .zone select:hover, .topbar .account > .btn[aria-expanded='true'] { background-color: var(--hover); }
+.topbar .account > .btn:hover, .topbar > .btn:hover, .topbar .zone .select:hover, .topbar .zone .select[aria-expanded='true'], .topbar .account > .btn[aria-expanded='true'] { background-color: var(--hover); }
 .plan-button {
   display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; padding: 6px 10px; border: 0; border-radius: 6px;
   background: none; font-weight: 600; cursor: pointer; color: var(--ink);
 }
-.plan-button svg { flex: none; color: var(--muted); }
 .plan-button:hover, .plan-button[aria-expanded='true'] { background: var(--hover); }
 .plan-button-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plan-menu { min-width: 300px; max-width: min(420px, calc(100vw - 32px)); }
 .menu-label { font-size: 12px; color: var(--muted); padding: 6px 10px 2px; }
-.plan-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.plan-item[aria-checked='true'] { font-weight: 600; }
-/* Native dropdown lists: match the theme instead of the OS default. */
-option { background-color: var(--surface); color: var(--ink); }
-.topbar select { field-sizing: content; width: auto; flex: 0 1 auto; }
+.chevron { flex: none; color: var(--muted); }
+
+/* One dropdown style for the whole app: the plan menu and every Select share .menu and .menu-option. */
+.menu-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.menu-option[aria-checked='true'], .menu-option[aria-selected='true'] { font-weight: 600; }
+.check-mark { flex: none; color: var(--ink); }
+.select {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0;
+  padding: 6px 8px; border: 1px solid transparent; border-radius: 6px; background: var(--surface-2); cursor: pointer; text-align: left;
+}
+.select:hover { border-color: var(--line); }
+.select[aria-expanded='true'] { border-color: var(--accent); background: var(--surface); }
+.select-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select.needs { background: var(--tent-soft); border-color: var(--tent); }
+.topbar .select { width: auto; padding: 6px 10px; }
+.menu.select-menu { position: fixed; top: auto; z-index: 40; max-height: min(320px, 60vh); overflow-y: auto; max-width: calc(100vw - 16px); }
+.menu-option { padding: 8px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.menu-option.active { background: var(--hover); }
 .theme-btn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0 !important; color: var(--muted); }
 .theme-btn:hover { color: var(--ink); }
 .zone label { color: var(--muted); font-size: 13px; }
@@ -238,14 +248,15 @@ option { background-color: var(--surface); color: var(--ink); }
 .input.short { width: 7.5em; }
 .input.tiny-input { width: 4.2em; text-align: right; }
 .input.note { min-width: 10em; }
-select.input { appearance: none; -webkit-appearance: none; padding-right: 26px; background-image: var(--chevron); background-repeat: no-repeat; background-position: right 9px center; cursor: pointer; }
 /* Inside tables, fields look like spreadsheet cells until hovered or focused. */
 .table .input { border-color: transparent; background-color: transparent; }
 .table .input:hover { border-color: transparent; background-color: var(--hover); }
 .table .input:focus { border-color: var(--accent); background-color: var(--surface); }
-.table select.input { background-image: none; padding-right: 8px; }
-.table select.input:hover, .table select.input:focus { background-image: var(--chevron); padding-right: 26px; }
-select.input.needs { background-color: var(--tent-soft); border-color: var(--tent); }
+.table .select { background: transparent; }
+.table .select .chevron { visibility: hidden; }
+.table .select:hover, .table .select[aria-expanded='true'] { background: var(--hover); border-color: transparent; }
+.table .select:hover .chevron, .table .select[aria-expanded='true'] .chevron, .table .select:focus-visible .chevron { visibility: visible; }
+.table .select.needs { background: var(--tent-soft); border-color: var(--tent); }
 textarea.input { resize: vertical; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 14px 18px; }
 .labeled { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -354,8 +365,8 @@ textarea.input { resize: vertical; }
 
 /* Fixes after first review */
 .zone label { white-space: nowrap; }
-.stints select.input { width: auto; min-width: 7.5em; }
-.stints select.input[id^='st-driver'] { min-width: 9.5em; }
+.stints .select { width: auto; min-width: 7.5em; }
+.stints .select[id^='st-driver'] { min-width: 10em; }
 .table td:first-child { white-space: nowrap; }
 @media (max-width: 640px) {
   .tl-stint span { display: none; }
@@ -403,12 +414,12 @@ textarea.input { resize: vertical; }
 .share-panel { top: calc(100% + 6px); min-width: min(420px, calc(100vw - 32px)); padding: 14px; gap: 10px; }
 .share-form { display: flex; flex-wrap: wrap; gap: 6px; }
 .share-form input { flex: 1 1 180px; }
-.share-form select { width: auto; }
+.share-form .select { width: auto; }
 .members { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .members li { display: flex; align-items: center; gap: 8px; }
 .members li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.members select { width: auto; }
+.members .select { width: auto; }
 .readonly-note { background: var(--tent-soft); color: var(--ink); border: 1px solid var(--tent); border-radius: var(--radius); padding: 8px 12px; margin: 0 0 14px; }
-main.readonly input, main.readonly select, main.readonly textarea, main.readonly .btn, main.readonly .icon-btn, main.readonly .cell { pointer-events: none; opacity: 0.75; }
+main.readonly input, main.readonly .select, main.readonly textarea, main.readonly .btn, main.readonly .icon-btn, main.readonly .cell { pointer-events: none; opacity: 0.75; }
 .menu .btn { text-align: center; }
 .menu .btn.primary { background: var(--cta); color: var(--cta-ink); border-color: var(--cta); }
