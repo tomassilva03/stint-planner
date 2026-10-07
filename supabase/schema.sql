@@ -57,8 +57,10 @@ alter table public.plans enable row level security;
 alter table public.plan_members enable row level security;
 
 drop policy if exists "read own or shared plans" on public.plans;
+-- owner_id is checked directly so a new plan can be read back by the insert that creates it
+-- (plan_role can't see a row its own statement is inserting).
 create policy "read own or shared plans" on public.plans for select
-  using (public.plan_role(id) is not null);
+  using (owner_id = auth.uid() or public.plan_role(id) is not null);
 
 drop policy if exists "create own plans" on public.plans;
 create policy "create own plans" on public.plans for insert
