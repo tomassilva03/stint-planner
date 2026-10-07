@@ -45,7 +45,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "SET-TO-THE-PUBLIC-KEY-FROM-tauri-signer-generate",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ1MzQwMjJGRkU2MUFGOTMKUldTVHIySCtMd0kwMWJTWGNFR05SZmdLZXM4NjBUYWZjdExOSWk1akYvYXcxelQ4T3gwSWhyTGcK",
       "endpoints": [
         "https://github.com/tomassilva03/stint-planner/releases/latest/download/latest.json"
       ],
