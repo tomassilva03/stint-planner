@@ -25,6 +25,23 @@ const TABS = [
 
 const THEMES = ['auto', 'dark', 'light'] as const;
 
+function ThemeIcon({ theme }: { theme: string }) {
+  if (theme === 'dark') return <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 1 1 9.4 3.5a7 7 0 0 0 11.1 11.1Z" fill="currentColor" /></svg>;
+  if (theme === 'light')
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="4" fill="currentColor" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </svg>
+    );
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 function readPref(key: string, fallback: string) {
   try {
     return localStorage.getItem(key) ?? fallback;
@@ -190,14 +207,14 @@ export default function App() {
         <AccountMenu cloud={cloud} />
         <button
           className="btn theme-btn"
-          title="Switch between the system setting, dark and light"
+          title={theme === 'dark' ? 'Dark theme' : theme === 'light' ? 'Light theme' : 'Theme follows your system'}
           onClick={() => setTheme(THEMES[(THEMES.indexOf(theme as (typeof THEMES)[number]) + 1) % THEMES.length])}
         >
-          {theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'Auto'}
-          <span className="sr-only"> theme</span>
+          <ThemeIcon theme={theme} />
+          <span className="sr-only">Theme: {theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'follow system'}</span>
         </button>
         <div className="zone">
-          <label htmlFor="zone-select">Show times in</label>
+          <label htmlFor="zone-select">Times in</label>
           <select id="zone-select" className="input" value={effectiveZone} onChange={(e) => setZone(e.target.value)}>
             <option value="utc">GMT</option>
             <option value="device">My local time</option>
