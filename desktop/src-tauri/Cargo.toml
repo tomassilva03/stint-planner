@@ -1,7 +1,7 @@
 [package]
 name = "nightstint"
 version = "0.1.0"
-description = "Nightstint for drivers: the planner in its own window, with the iRacing helper built in"
+description = "Nightstint for drivers: the iRacing helper in the tray, feeding live data to the planner"
 edition = "2021"
 publish = false
 

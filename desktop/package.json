@@ -2,7 +2,7 @@
   "name": "nightstint-desktop",
   "private": true,
   "version": "0.1.0",
-  "description": "Windows app for drivers: Nightstint in its own window, with the iRacing helper built in.",
+  "description": "Windows tray app for drivers: the iRacing helper, feeding live data to Nightstint in the browser.",
   "type": "module",
   "scripts": {
     "prepare-helper": "node scripts/prepare-helper.mjs",
