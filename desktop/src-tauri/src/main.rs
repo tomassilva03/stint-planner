@@ -24,7 +24,7 @@ use tauri_plugin_shell::{
 };
 
 /// The live site. `?live` connects the planner to the helper without a click.
-/// A build can point somewhere else with NIGHTSTINT_URL (CI uses the PR's preview),
+/// A build can point somewhere else with NIGHTSTINT_URL at compile time,
 /// and so can the NIGHTSTINT_URL environment variable when the app starts.
 const PLANNER_URL: &str = match option_env!("NIGHTSTINT_URL") {
     Some(url) => url,
