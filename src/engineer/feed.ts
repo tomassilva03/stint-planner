@@ -1,7 +1,8 @@
 // What the Race engineer tab shows, and how it reaches teammates who aren't driving.
 // The page on the PC running the helper turns the helper's data into a small feed and
 // shares it on the private Realtime channel "live:<plan id>" (see supabase/schema.sql);
-// every page open on the same cloud plan listens there. The local helper always wins.
+// every page open on the same cloud plan listens there. The local helper wins unless a
+// teammate's feed knows the fuel and this PC's doesn't (it's on the pit wall, not driving).
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { cloud } from '../cloud';
@@ -85,6 +86,16 @@ export function pickFeed(feeds: EngineerFeed[], now: number): EngineerFeed | nul
   if (!fresh.length) return null;
   const score = (f: EngineerFeed) => (f.state?.fuelLevel != null ? 1 : 0) * 1e15 + f.sentAt;
   return fresh.reduce((a, b) => (score(b) > score(a) ? b : a));
+}
+
+/**
+ * What the tab shows: this PC's helper, unless it can't read the fuel (this PC isn't
+ * driving) and a teammate's recent feed can, so the pit wall sees the driver's fuel.
+ */
+export function chooseFeed(local: EngineerFeed | null, remote: EngineerFeed[], now: number): { feed: EngineerFeed | null; origin: Engineer['origin'] } {
+  const best = pickFeed(remote, now);
+  if (local && (local.state?.fuelLevel != null || best?.state?.fuelLevel == null)) return { feed: local, origin: 'local' };
+  return best ? { feed: best, origin: 'remote' } : { feed: null, origin: null };
 }
 
 export type ShareStatus =
@@ -198,8 +209,7 @@ export function useEngineer(planId: string, live: Live, session: Session | null,
     return () => clearInterval(t);
   }, [remote.length]);
 
-  const feed = localLive ? feedFromLive(live, pageId, Date.now(), call) : pickFeed(remote, now);
-  const origin = localLive ? 'local' : feed ? 'remote' : null;
+  const { feed, origin } = chooseFeed(localLive ? feedFromLive(live, pageId, Date.now(), call) : null, remote, now);
 
   // Remember track shapes, so a teammate who joins mid-race sees the map at once
   const track = feed?.field?.track ?? feed?.state?.track ?? '';
