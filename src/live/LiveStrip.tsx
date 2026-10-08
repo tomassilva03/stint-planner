@@ -47,7 +47,7 @@ export function LiveStrip({ live, readOnly, plan }: { live: Live; readOnly: bool
       {status === 'live' && !inRaceWindow(plan, Date.now()) && (
         <span className="muted">
           Stops don't fill in this plan: its race is on {raceDay(plan)}, not now.
-          {live.source === 'demo' && ' To try the demo, set Session start in Race setup to a few minutes ago.'}
+          {live.source === 'demo' && ' To try the demo, pick “Demo race, starting now” from the plan menu at the top.'}
         </span>
       )}
       {readOnly && status === 'live' && <span className="muted">View only: ask the owner for edit access to fill stints.</span>}
