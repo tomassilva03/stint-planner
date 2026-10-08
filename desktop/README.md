@@ -19,7 +19,8 @@ tray, so the helper is always ready when you drive.
 
 ## Tray menu
 
-Right-click the moon icon near the clock:
+Right-click the moon icon near the clock. The top line shows the version you have
+("Nightstint helper 0.1.12"), and so does the icon's tooltip when you hover it.
 
 - **Open Nightstint** opens the planner in your browser (so does a left click on the icon).
 - **Demo race (no iRacing)** plays a made-up race, to try everything without driving.
@@ -44,8 +45,8 @@ site too.
 
 Changes to the app or the helper update installed apps by themselves. Every merge to `main` that
 touches `desktop/`, `helper/` or `src/live/` publishes a new release, and the app installs it the
-next time it starts (or from **Check for updates** in the tray menu). The tray menu shows the
-version you have.
+next time it starts (or from **Check for updates** in the tray menu). The top line of the tray menu
+shows the version you have.
 
 Updates are signed, and the app only accepts ones signed with the project's key. The public half
 is in `src-tauri/tauri.conf.json`; the private half is the `TAURI_SIGNING_PRIVATE_KEY` repository
