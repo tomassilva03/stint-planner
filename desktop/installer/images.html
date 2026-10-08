@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- Source for the installer's bitmaps (sidebar.bmp, header.bmp); scripts/installer-images.mjs renders them -->
+<meta charset="utf-8">
+<style>
+  * { margin: 0; box-sizing: border-box; }
+  body { font-family: Inter, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .sidebar { width: 164px; height: 314px; background: #1b1b1b; color: #ececea; padding: 26px 20px; display: flex; flex-direction: column; }
+  .mark { display: block; }
+  .name { font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin-top: 14px; }
+  .what { color: #9a9a95; font-size: 12.5px; line-height: 1.45; margin-top: 6px; }
+  .foot { margin-top: auto; color: #6f6f6a; font-size: 11px; line-height: 1.4; border-top: 1px solid #333331; padding-top: 10px; }
+  .header { width: 150px; height: 57px; background: #ffffff; color: #1d1d1b; display: flex; align-items: center; justify-content: flex-end; gap: 7px; padding-right: 14px; font-weight: 600; font-size: 15px; }
+</style>
+<div id="sidebar" class="sidebar">
+  <svg class="mark" width="30" height="30" viewBox="0 0 24 24"><path d="M20.5 14.6A8.5 8.5 0 1 1 9.4 3.5a7 7 0 0 0 11.1 11.1Z" fill="#ececea"/></svg>
+  <div class="name">Nightstint</div>
+  <div class="what">The iRacing helper. Live laps, fuel and stops for your stint plan.</div>
+  <div class="foot">Runs in the tray.<br>Updates itself.</div>
+</div>
+<div id="header" class="header">
+  <svg width="17" height="17" viewBox="0 0 24 24"><path d="M20.5 14.6A8.5 8.5 0 1 1 9.4 3.5a7 7 0 0 0 11.1 11.1Z" fill="#1d1d1b"/></svg>
+  <span>Nightstint</span>
+</div>

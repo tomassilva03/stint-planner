@@ -38,7 +38,9 @@
       },
       "nsis": {
         "installMode": "currentUser",
-        "installerIcon": "icons/icon.ico"
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "../installer/header.bmp",
+        "sidebarImage": "../installer/sidebar.bmp"
       }
     },
     "createUpdaterArtifacts": true
@@ -50,7 +52,7 @@
         "https://github.com/tomassilva03/stint-planner/releases/latest/download/latest.json"
       ],
       "windows": {
-        "installMode": "passive"
+        "installMode": "quiet"
       }
     }
   }

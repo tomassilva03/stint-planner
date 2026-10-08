@@ -17,6 +17,7 @@ use tauri::{
     AppHandle, Manager, RunEvent, Url,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_updater::UpdaterExt;
 use tauri_plugin_shell::{
@@ -156,15 +157,27 @@ fn stop_helper(app: &AppHandle) {
     }
 }
 
-/// Installs a newer version from GitHub if there is one: the installer closes the app,
-/// updates it and opens it again. Offline or no release yet just gets logged.
-async fn update(app: AppHandle) {
+/// A Windows notification from Nightstint, instead of a window
+fn notify(app: &AppHandle, body: &str) {
+    if let Err(e) = app.notification().builder().title("Nightstint").body(body).show() {
+        log(app, &format!("Couldn't show a notification: {e}"));
+    }
+}
+
+/// Written just before an update installs, so the new version can say it was updated
+const UPDATED_MARKER: &str = "just-updated";
+
+/// Installs a newer version from GitHub if there is one: the installer runs without a
+/// window, closes the app, updates it and opens it again. `asked` is a check from the tray
+/// menu, which says how it went; the check at start only speaks up after an update.
+async fn update(app: AppHandle, asked: bool) {
     let result = async {
         let Some(update) = app.updater()?.check().await? else {
             return Ok::<_, tauri_plugin_updater::Error>(false);
         };
         let bytes = update.download(|_, _| {}, || {}).await?;
         log(&app, &format!("--- updating to {}", update.version));
+        let _ = fs::write(data_dir(&app, "").join(UPDATED_MARKER), &update.version);
         // The installer replaces the helper's files, so it can't be running
         stop_helper(&app);
         update.install(bytes)?;
@@ -173,9 +186,18 @@ async fn update(app: AppHandle) {
     .await;
     match result {
         Ok(true) => app.restart(),
-        Ok(false) => log(&app, "--- no update available"),
+        Ok(false) => {
+            log(&app, "--- no update available");
+            if asked {
+                notify(&app, &format!("You have the latest version ({}).", app.package_info().version));
+            }
+        }
         Err(e) => {
             log(&app, &format!("--- update failed: {e}"));
+            let _ = fs::remove_file(data_dir(&app, "").join(UPDATED_MARKER));
+            if asked {
+                notify(&app, "Couldn't check for updates. Are you online?");
+            }
             let state = app.state::<Helper>();
             let stopped = std::mem::replace(&mut *state.quitting.lock().unwrap(), false);
             if stopped {
@@ -247,7 +269,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             }
             "restart" => start_helper(app),
             "update" => {
-                tauri::async_runtime::spawn(update(app.clone()));
+                tauri::async_runtime::spawn(update(app.clone(), true));
             }
             "recordings" => {
                 let _ = app.opener().open_path(plain_path(&data_dir(app, "recordings")), None::<&str>);
@@ -278,6 +300,7 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![HIDDEN_ARG])))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Helper::default())
         .setup(|app| {
@@ -290,7 +313,13 @@ fn main() {
             }
             build_tray(handle)?;
             start_helper(handle);
-            tauri::async_runtime::spawn(update(handle.clone()));
+            // Just updated: say so, since the update itself shows no window
+            let updated = data_dir(handle, "").join(UPDATED_MARKER);
+            if updated.exists() {
+                let _ = fs::remove_file(&updated);
+                notify(handle, &format!("Updated to version {}.", handle.package_info().version));
+            }
+            tauri::async_runtime::spawn(update(handle.clone(), false));
             // Started by hand rather than by Windows at sign-in: show the planner
             if !std::env::args().any(|a| a == HIDDEN_ARG) {
                 open_planner(handle);
