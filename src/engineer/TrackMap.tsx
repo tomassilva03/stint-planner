@@ -1,6 +1,6 @@
 // The live track map: every car as a dot on the track's shape (or on a ring until the
 // shape is known), moved smoothly between the once-a-second readings.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { trackDelta, type FieldCar } from '../live/field';
 
 const SIZE = 1000;
@@ -55,20 +55,64 @@ function pathOf(place: (pct: number) => [number, number], steps = 300) {
   return { d: d + 'Z', box };
 }
 
+interface Motion {
+  /** Lap fraction in the latest reading */
+  pct: number;
+  /** When that reading arrived here, ms */
+  at: number;
+  /** Laps per second as seen here, from one reading to the next */
+  v: number;
+  /** Where the dot is drawn now */
+  shown: number;
+}
+
+/** How quickly a drawn dot catches up with where the car should be, per second */
+const CATCH_UP = 6;
+
 export function TrackMap({ cars, ourIdx, points, multiClass, flip }: Props) {
   const place = placer(points, flip);
-  const [, setTick] = useState(0);
-  const got = useRef({ cars, at: performance.now() });
-  if (got.current.cars !== cars) got.current = { cars, at: performance.now() };
+  const motion = useRef(new Map<number, Motion>());
+  const dots = useRef(new Map<number, SVGGElement>());
+  const placeRef = useRef(place);
+  placeRef.current = place;
 
-  // Redraw about 20 times a second while the page is visible
+  // Each new reading: measure every car's speed between readings, by this page's clock,
+  // so cars glide at the right speed however often readings come (and at any demo speed)
+  const seen = useRef<FieldCar[] | null>(null);
+  if (seen.current !== cars) {
+    seen.current = cars;
+    const now = performance.now();
+    const next = new Map<number, Motion>();
+    for (const c of cars) {
+      const m = motion.current.get(c.idx);
+      if (!m) {
+        next.set(c.idx, { pct: c.pct, at: now, v: c.spd, shown: c.pct });
+        continue;
+      }
+      const dt = (now - m.at) / 1000;
+      const moved = ((c.pct - m.pct) % 1 + 1) % 1;
+      let v = m.v;
+      if (dt > 0.05 && moved < 0.25) v = m.v ? m.v * 0.5 + (moved / dt) * 0.5 : moved / dt;
+      next.set(c.idx, { pct: c.pct, at: now, v, shown: m.shown });
+    }
+    motion.current = next;
+  }
+
+  // Move the dots every frame, straight in the drawing (no re-render)
   useEffect(() => {
     let raf = 0;
-    let last = 0;
+    let last = performance.now();
     const loop = (t: number) => {
-      if (t - last > 50) {
-        last = t;
-        setTick((n) => n + 1);
+      const dt = Math.min(0.1, (t - last) / 1000);
+      last = t;
+      for (const [idx, m] of motion.current) {
+        const el = dots.current.get(idx);
+        if (!el) continue;
+        const target = m.pct + m.v * Math.min(MAX_GUESS, (t - m.at) / 1000);
+        // Ease towards it, so a correction never jumps
+        m.shown += trackDelta(target, m.shown) * Math.min(1, dt * CATCH_UP);
+        const [x, y] = placeRef.current(m.shown);
+        el.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
       }
       raf = requestAnimationFrame(loop);
     };
@@ -76,7 +120,6 @@ export function TrackMap({ cars, ourIdx, points, multiClass, flip }: Props) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const elapsed = Math.min(MAX_GUESS, (performance.now() - got.current.at) / 1000);
   const [sx, sy] = place(0);
   const [nx, ny] = place(0.004);
   const ang = Math.atan2(ny - sy, nx - sx) + Math.PI / 2;
@@ -97,11 +140,13 @@ export function TrackMap({ cars, ourIdx, points, multiClass, flip }: Props) {
       />
       {drawn.map((c) => {
         const mine = c.idx === ourIdx;
-        const pct = c.pit ? c.pct : c.pct + c.spd * elapsed;
-        const [x, y] = place(pct);
+        const [x, y] = place(motion.current.get(c.idx)?.shown ?? c.pct);
         const fill = mine ? 'var(--now)' : multiClass && c.clsColor ? c.clsColor : 'var(--muted)';
         return (
-          <g key={c.idx} className={`car${mine ? ' ours' : ''}${c.pit ? ' in-pit' : ''}`} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}>
+          <g
+            key={c.idx}
+            ref={(el) => void (el ? dots.current.set(c.idx, el) : dots.current.delete(c.idx))}
+            className={`car${mine ? ' ours' : ''}${c.pit ? ' in-pit' : ''}`} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}>
             <title>{`#${c.num} ${c.team || c.driver} (P${c.clsPos}${multiClass ? ` ${c.clsName}` : ''})${c.pit ? ', in the pits' : ''}`}</title>
             <circle r={mine ? 22 : 15} style={{ fill: c.pit ? 'var(--bg)' : fill, stroke: c.pit ? fill : undefined }} />
             {(mine || (c.clsPos === 1 && !(ours && Math.abs(trackDelta(c.pct, ours.pct)) < 0.04))) && (

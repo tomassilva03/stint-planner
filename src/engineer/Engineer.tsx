@@ -7,6 +7,7 @@ import type { Live } from '../live/useLive';
 import { duration, lapTime } from '../time';
 import { Select } from '../ui';
 import type { Engineer as EngineerData } from './feed';
+import type { PitCall } from './pitCall';
 import { TrackMap } from './TrackMap';
 import { between, classes, gapText, neighbours, relText, relatives, secs } from './view';
 import './engineer.css';
@@ -70,6 +71,18 @@ export function Engineer({ plan, live, engineer, signedIn }: Props) {
         {s?.sessionTimeRemain != null && <span className="muted">{duration(s.sessionTimeRemain)} left</span>}
         <span className="muted">{shareNote(engineer, signedIn)}</span>
       </div>
+
+      {feed.call ? (
+        <CallPanel call={feed.call} />
+      ) : (
+        s?.isRace && (
+          <p className="hint">
+            {origin === 'local'
+              ? 'No pit call: this race isn’t the one this plan is for. Open the plan for this race (or “Demo race, starting now” for the demo).'
+              : 'No pit call from the driving PC yet: it needs this plan open during its race.'}
+          </p>
+        )
+      )}
 
       <section className="panel engineer-car" aria-label="Our car">
         <dl className="eng-stats">
@@ -248,6 +261,90 @@ function gapOrLaps(front: NonNullable<ReturnType<typeof neighbours>['ours']>, ba
   if (s != null) return `${secs(s)} s`;
   const laps = back.down - front.down;
   return laps > 0 ? `${laps} lap${laps > 1 ? 's' : ''}` : '–';
+}
+
+const HEADS = { stable: 'Plan holds', change: 'Strategy change', critical: 'Fuel won’t last' } as const;
+
+/** Box this lap or not, with the fuel and stop numbers behind it */
+function CallPanel({ call: c }: { call: PitCall }) {
+  const f = c.fuel;
+  const litres = (x: number) => `${x.toFixed(1)} L`;
+  const head = c.onPitRoad ? 'In the pits' : c.severity ? HEADS[c.severity] : 'Pit call';
+  const line = c.onPitRoad ? `Fill ${c.addAtStopL != null ? litres(c.addAtStopL) : '–'}${c.addIsFull ? ' (full tank)' : ''}` : c.boxThisLap ? 'Box this lap' : c.call ?? '–';
+  const facts = [
+    c.gainSec != null ? `${c.gainSec >= 0 ? '+' : '−'}${Math.abs(c.gainSec).toFixed(1)} s vs ${c.against}` : null,
+    c.severity ? `confidence ${Math.round(c.confidence * 100)}%` : null,
+  ].filter(Boolean);
+  const urgent = c.boxThisLap || c.severity === 'critical';
+  return (
+    <section className={`panel eng-call is-${c.severity ?? 'pit'}${urgent ? ' urgent' : ''}`} aria-label="Pit call" aria-live="polite">
+      <div className="eng-call-head">
+        <span className="muted">{head}</span>
+        <strong className="eng-call-line">{line}</strong>
+        {facts.length > 0 && <span className="muted">{facts.join(' · ')}</span>}
+      </div>
+      <dl className="eng-stats eng-fuel">
+        <Stat
+          k="Fuel lasts"
+          v={`${f.lapsLeft.toFixed(1)} laps`}
+          sub={`dry after lap ${f.emptyLap}${f.measured ? '' : ', estimated'}`}
+          warn={c.plannedStopLap != null && f.emptyLap < c.plannedStopLap}
+        />
+        <Stat
+          k="Per lap"
+          v={`${f.perLap.toFixed(2)} L`}
+          sub={Math.abs(f.deltaPct) >= 0.005 ? `${Math.abs(f.deltaPct * 100).toFixed(1)}% ${f.deltaPct < 0 ? 'under' : 'over'} plan (${f.planned.toFixed(2)})` : 'on plan'}
+        />
+        <Stat k="To the flag" v={c.toFlagL == null ? '–' : c.toFlagL > 0 ? `+${litres(c.toFlagL)}` : 'Covered'} sub={c.toFlagL ? 'more than is in the tank' : c.toFlagL === 0 ? 'enough fuel to finish' : undefined} />
+        {!c.onPitRoad && (
+          <Stat
+            k="Next stop"
+            v={c.stopLap != null ? `Lap ${c.stopLap}` : c.isFinalStint ? 'None' : '–'}
+            sub={c.stopLap != null ? [c.stopLap - c.lapsCompleted === 1 ? 'this lap' : `in ${c.stopLap - c.lapsCompleted} laps`, c.plannedStopLap != null && c.plannedStopLap !== c.stopLap ? `plan said ${c.plannedStopLap}` : null].filter(Boolean).join(', ') : 'running to the flag'}
+            now={c.boxThisLap}
+          />
+        )}
+        <Stat k="Add at the stop" v={c.addAtStopL != null ? litres(c.addAtStopL) : '–'} sub={c.addAtStopL != null ? (c.addIsFull ? 'full tank' : 'just enough for the flag') : undefined} />
+        <Stat k="Next driver" v={c.nextDriver ?? '–'} sub={`lap ${c.stintLap} of this stint`} />
+      </dl>
+      {c.reasons.length > 0 && (
+        <ul className="eng-why">
+          {c.reasons.map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
+      )}
+      {c.options.length > 1 && (
+        <details className="eng-options">
+          <summary>Options weighed</summary>
+          <div className="table-wrap">
+            <table className="table eng-table">
+              <thead>
+                <tr>
+                  <th>Option</th>
+                  <th className="num">Stop on lap</th>
+                  <th className="num">Fuel left at stop</th>
+                  <th className="num">Stops to flag</th>
+                  <th className="num">vs {c.against}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {c.options.map((o) => (
+                  <tr key={o.label} className={o.best ? 'ours' : ''}>
+                    <td>{o.label}</td>
+                    <td className="num">{o.stopLap ?? 'flag'}</td>
+                    <td className="num mono">{o.fuelMarginLaps.toFixed(1)} laps</td>
+                    <td className="num">{o.stops}</td>
+                    <td className="num mono">{o.risky ? 'runs dry' : `${o.gainSec >= 0 ? '+' : '−'}${Math.abs(o.gainSec).toFixed(1)} s`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
+    </section>
+  );
 }
 
 function shareNote(e: EngineerData, signedIn: boolean) {

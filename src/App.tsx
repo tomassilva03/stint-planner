@@ -17,6 +17,8 @@ import { Stints } from './views/Stints';
 import { useLive } from './live/useLive';
 import { Engineer } from './engineer/Engineer';
 import { useEngineer } from './engineer/feed';
+import { pitCall } from './engineer/pitCall';
+import { liveRaceState } from './strategy/RaceStatePanel';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -106,7 +108,10 @@ export default function App() {
 
   const calc = useMemo(() => compute(plan), [plan]);
   const live = useLive(plan, update, cloud.readOnly);
-  const engineer = useEngineer(plan.id, live, cloud.session, !!cloud.meta[plan.id]);
+  // The pit call for the Race engineer tab, worked out here when this PC runs the helper
+  const race = liveRaceState(live, plan, calc);
+  const call = race ? pitCall(plan, calc, race) : null;
+  const engineer = useEngineer(plan.id, live, cloud.session, !!cloud.meta[plan.id], call);
   const team = plan.mode === 'team';
   const visibleTabs = TABS.filter((t) => !t.team || team);
   const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : 'overview';

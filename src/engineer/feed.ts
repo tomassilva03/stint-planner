@@ -8,6 +8,7 @@ import { cloud } from '../cloud';
 import type { FieldSnapshot } from '../live/field';
 import type { LiveEvent, LiveState } from '../live/protocol';
 import type { Live } from '../live/useLive';
+import type { PitCall } from './pitCall';
 
 export interface LapRecord {
   lap: number;
@@ -38,6 +39,8 @@ export interface EngineerFeed {
   state: LiveState | null;
   field: FieldSnapshot | null;
   team: TeamSummary;
+  /** Box this lap or not, and the fuel numbers behind it, when the race is this plan's race */
+  call?: PitCall | null;
   /** The track's shape: sent now and then rather than every second */
   outline?: { track: string; points: number[] };
 }
@@ -64,8 +67,9 @@ export function summarise(events: LiveEvent[]): TeamSummary {
   };
 }
 
-export const feedFromLive = (live: Live, from: string, now: number): EngineerFeed => ({
+export const feedFromLive = (live: Live, from: string, now: number, call: PitCall | null = null): EngineerFeed => ({
   v: 1,
+  call,
   from,
   sentAt: now,
   source: live.source,
@@ -129,7 +133,7 @@ function saveOutline(track: string, points: number[]) {
  * The Race engineer feed for a plan. `inCloud` is whether the plan is saved to the
  * signed-in account (owned or shared), which is what gives it a channel.
  */
-export function useEngineer(planId: string, live: Live, session: Session | null, inCloud: boolean): Engineer {
+export function useEngineer(planId: string, live: Live, session: Session | null, inCloud: boolean, call: PitCall | null): Engineer {
   const [remote, setRemote] = useState<EngineerFeed[]>([]);
   const [share, setShare] = useState<ShareStatus>('signed-out');
   const [now, setNow] = useState(Date.now());
@@ -137,6 +141,8 @@ export function useEngineer(planId: string, live: Live, session: Session | null,
   const channelRef = useRef<ReturnType<NonNullable<typeof cloud>['channel']> | null>(null);
   const liveRef = useRef(live);
   liveRef.current = live;
+  const callRef = useRef(call);
+  callRef.current = call;
   const localLive = live.status === 'live';
 
   // Join the plan's channel while signed in on a cloud plan
@@ -178,7 +184,7 @@ export function useEngineer(planId: string, live: Live, session: Session | null,
     const t = setInterval(() => {
       const l = liveRef.current;
       if (l.status !== 'live' || !channelRef.current) return;
-      const f = feedFromLive(l, pageId, Date.now());
+      const f = feedFromLive(l, pageId, Date.now(), callRef.current);
       if (n++ % OUTLINE_EVERY !== 0) delete f.outline;
       void channelRef.current.send({ type: 'broadcast', event: 'feed', payload: f });
     }, SEND_MS);
@@ -192,7 +198,7 @@ export function useEngineer(planId: string, live: Live, session: Session | null,
     return () => clearInterval(t);
   }, [remote.length]);
 
-  const feed = localLive ? feedFromLive(live, pageId, Date.now()) : pickFeed(remote, now);
+  const feed = localLive ? feedFromLive(live, pageId, Date.now(), call) : pickFeed(remote, now);
   const origin = localLive ? 'local' : feed ? 'remote' : null;
 
   // Remember track shapes, so a teammate who joins mid-race sees the map at once

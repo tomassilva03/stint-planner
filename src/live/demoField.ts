@@ -4,6 +4,7 @@
 import { DEMO_SCRIPT, PIT_LANE_SEC, planRace, type DemoScript } from './demo';
 import { normalise, type RawCar, type RawField } from './field';
 import type { Sample } from './protocol';
+import { SILVERSTONE_GP, toPlane } from './tracks';
 
 /** The slice of the lap the pit lane covers; a car leaving the pits starts its lap this far round */
 const PIT_LANE_LAP = 0.015;
@@ -247,17 +248,9 @@ export class DemoField {
   }
 }
 
-/** The demo track's outline: a closed loop of points, evenly spaced around the lap */
-export function demoOutline(points = 240): number[] {
-  // A lumpy loop, sampled finely, then respaced by distance so lap % maps to the right place
-  const fine: [number, number][] = [];
-  const n = 2000;
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2;
-    const r = 1 + 0.22 * Math.sin(2 * a + 0.4) + 0.12 * Math.cos(3 * a) + 0.07 * Math.sin(5 * a + 1.3);
-    fine.push([Math.cos(a) * r * 1.35, Math.sin(a) * r]);
-  }
-  return respace(fine, points);
+/** The demo track's outline: Silverstone's real layout, as points evenly spaced around the lap */
+export function demoOutline(points = 300): number[] {
+  return respace(toPlane(SILVERSTONE_GP), points);
 }
 
 /** Points along a closed path, `count` of them at equal distances, scaled into 0..1000 */

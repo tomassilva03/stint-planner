@@ -19,7 +19,7 @@ describe('track outline from one lap', () => {
     const rec = new OutlineRecorder();
     let out: number[] | null = null;
     let t = 0;
-    const speed = 50;
+    const speed = 80;
     for (let lap = 0; lap < 3 && !out; lap++) {
       for (let i = 0; i < pts.length && !out; i += 3) {
         const [x0, y0] = pts[i];
