@@ -11,7 +11,7 @@ use std::{
 };
 
 use tauri::{
-    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     path::BaseDirectory,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, RunEvent, Url,
@@ -35,13 +35,16 @@ const PRODUCTION_ORIGIN: &str = "https://stint-planner-three.vercel.app";
 /// Passed when Windows starts the app at sign-in: stay in the tray
 const HIDDEN_ARG: &str = "--hidden";
 const HELPER_SCRIPT: &str = "helper/lib/esm/helper.mjs";
+/// Demo race speeds in the tray, as (times real speed, label)
+const DEMO_SPEEDS: [(u32, &str); 3] = [(1, "Real time"), (10, "10x faster"), (30, "30x faster (about 2.5 min)")];
 
 #[derive(Default)]
 struct Helper {
     child: Mutex<Option<CommandChild>>,
     /// Bumped on every start, so a helper we replaced doesn't get restarted
     generation: Mutex<u64>,
-    demo: Mutex<bool>,
+    /** Playing the demo race instead of reading iRacing, at this many times real speed */
+    demo: Mutex<Option<u32>>,
     quitting: Mutex<bool>,
 }
 
@@ -105,8 +108,8 @@ fn start_helper(app: &AppHandle) {
     if origin != PRODUCTION_ORIGIN {
         args.extend(["--origin".to_string(), origin]);
     }
-    if demo {
-        args.push("--demo".to_string());
+    if let Some(speed) = demo {
+        args.extend(["--demo".to_string(), "--speed".to_string(), speed.to_string()]);
     }
 
     let command = match app.shell().sidecar("nightstint-helper") {
@@ -116,7 +119,7 @@ fn start_helper(app: &AppHandle) {
     let cwd = script.parent().map(Path::to_path_buf).unwrap_or_default();
     match command.args(args).current_dir(cwd).spawn() {
         Ok((mut rx, child)) => {
-            log(app, &format!("--- helper started{}", if demo { " (demo race)" } else { "" }));
+            log(app, &format!("--- helper started{}", match demo { Some(x) => format!(" (demo race, {x}x)"), None => String::new() }));
             *state.child.lock().unwrap() = Some(child);
             let app = app.clone();
             tauri::async_runtime::spawn(async move {
@@ -193,7 +196,16 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let version = app.package_info().version.to_string();
     let about = MenuItem::with_id(app, "version", format!("Nightstint helper {version}"), false, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Open Nightstint", true, None::<&str>)?;
-    let demo = CheckMenuItem::with_id(app, "demo", "Demo race (no iRacing)", true, false, None::<&str>)?;
+    // Demo race speeds: the race is 70 minutes, so 30x plays it in under 3
+    let demo_off = CheckMenuItem::with_id(app, "demo-off", "Off (read iRacing)", true, true, None::<&str>)?;
+    let demo_speeds = DEMO_SPEEDS
+        .iter()
+        .map(|&(speed, label)| CheckMenuItem::with_id(app, format!("demo-{speed}"), label, true, false, None::<&str>))
+        .collect::<tauri::Result<Vec<_>>>()?;
+    let mut demo_items: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = vec![&demo_off];
+    demo_items.extend(demo_speeds.iter().map(|i| i as &dyn tauri::menu::IsMenuItem<tauri::Wry>));
+    let demo = Submenu::with_items(app, "Demo race (no iRacing)", true, &demo_items)?;
+    let demo_checks: Vec<CheckMenuItem<tauri::Wry>> = std::iter::once(demo_off.clone()).chain(demo_speeds.iter().cloned()).collect();
     let restart = MenuItem::with_id(app, "restart", "Restart iRacing helper", true, None::<&str>)?;
     let recordings = MenuItem::with_id(app, "recordings", "Open recordings folder", true, None::<&str>)?;
     let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
@@ -224,8 +236,13 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id().as_ref() {
             "open" => open_planner(app),
-            "demo" => {
-                *app.state::<Helper>().demo.lock().unwrap() = demo.is_checked().unwrap_or(false);
+            id if id.starts_with("demo-") => {
+                let speed = id["demo-".len()..].parse::<u32>().ok();
+                // Only the picked one stays ticked
+                for item in &demo_checks {
+                    let _ = item.set_checked(item.id().as_ref() == id);
+                }
+                *app.state::<Helper>().demo.lock().unwrap() = speed;
                 start_helper(app);
             }
             "restart" => start_helper(app),

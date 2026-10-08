@@ -39,14 +39,18 @@ driving. Each stop has the same id on every PC, so it's never applied twice.
 
 ## Try it without iRacing
 
-Double-click `demo.bat` (or `npm run demo`). It plays a made-up race at 10x speed: four stints, a
-drive-through and a caution. To have the demo stops land inside a plan's race, pass a start time:
+Double-click `demo.bat` (or `npm run demo`). It plays a made-up 70 minute race at 10x speed
+(`--speed 30` for faster) that doesn't go to plan: a slower driver, a stint a lap long, a safety car,
+a slow stop, a drive-through and a stint a lap short. In the planner, pick **Demo race, starting
+now** from the plan menu; its start moves to the demo's green flag, and the stops fill in ahead of
+and behind plan.
+
+To have the demo stops land inside one of your own plans instead, pass a start time, and use a copy
+of the plan, since the demo fills in real actual ends:
 
 ```
 npm run demo -- --at 2026-10-11T13:00:00Z --speed 30
 ```
-
-Use a copy of your plan for this, since the demo fills in real actual ends.
 
 ## Options
 

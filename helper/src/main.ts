@@ -102,7 +102,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function runDemo() {
   const speed = Number(opt('speed') ?? 10);
   const start = opt('at') ? Date.parse(opt('at')!) : Date.now();
-  for (const [t, s] of demoRace({ step: 0.5 })) {
+  for (const [t, s] of demoRace(0.5)) {
     handle(s, start + t * 1000);
     await sleep(500 / speed);
   }

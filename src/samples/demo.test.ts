@@ -10,7 +10,7 @@ import { demoPlan } from './demo';
 function demoEvents(start: number): LiveEvent[] {
   const d = new Detector();
   const out: LiveEvent[] = [];
-  for (const [t, s] of demoRace({ step: 0.5 })) out.push(...d.push(s, start + t * 1000));
+  for (const [t, s] of demoRace()) out.push(...d.push(s, start + t * 1000));
   return out;
 }
 
@@ -22,11 +22,15 @@ describe('demo plan', () => {
     ['5 minutes earlier', -5 * 60_000],
     ['50 minutes later', 50 * 60_000],
     ['a day later', 24 * 3600_000],
-  ])('fills the first three stints when the demo starts %s', (_, delay) => {
+  ])('fills every stop when the demo starts %s', (_, delay) => {
     const plan = applyEvents(demoPlan(now), demoEvents(now + delay));
-    expect(plan.stints.map((s) => s.actualLaps ?? null).slice(0, 4)).toEqual([6, 6, 6, null]);
-    expect(plan.stints.filter((s) => s.actualEnd)).toHaveLength(3);
-    // Lined up with the demo: each stop within a few seconds of the plan
-    for (const s of compute(plan).stints.slice(0, 3)) expect(Math.abs(s.deltaSec ?? Infinity)).toBeLessThan(5);
+    const stints = compute(plan).stints;
+    // Laps per stint: on plan, on plan, a lap long, on plan, a lap short
+    expect(plan.stints.map((s) => s.actualLaps ?? null)).toEqual([6, 6, 7, 6, 5, null]);
+    // Each stop against the plan as it stood (seconds): a bit ahead, a slower driver,
+    // a lap later, a safety car and a slow stop, and a stop a lap early
+    expect(stints.slice(0, 5).map((s) => Math.round(s.deltaSec ?? NaN))).toEqual([-3, 10, 107, 212, -79]);
+    // The last stint runs to the flag
+    expect(stints[5].isFinal).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
-// A plan that matches the helper's demo race (src/live/demo.ts), starting now, so trying
-// the demo fills real stints: two drivers, 1:40 laps, 3 L a lap, a stop every 6 laps.
+// The plan for the helper's demo race (src/live/demo.ts), starting now, so trying the
+// demo fills real stints: two drivers, 1:40 laps, 3 L a lap, a stop every 6 laps. The
+// demo itself doesn't go to plan, so stints come in ahead and behind and the rest recalc.
 import type { Plan } from '../model';
 import { newDriver, newPlan } from '../model';
 import { DEMO_TRACK } from '../live/apply';
@@ -11,9 +12,9 @@ export function demoPlan(now = Date.now()): Plan {
   return {
     ...base,
     name: 'Demo race (for the helper’s demo)',
-    // Starts now and runs two hours; once the demo runs, its first lap moves the start to
+    // Starts now and runs 70 minutes, like the demo; once the demo runs, its first lap moves the start to
     // the demo's green flag (alignDemoStart), so the plan lines up whenever it was picked
-    event: { ...base.event, sessionStart: new Date(now).toISOString(), greenFlagOffsetMin: 0, durationMin: 120, track: DEMO_TRACK, car: 'Demo GT3' },
+    event: { ...base.event, sessionStart: new Date(now).toISOString(), greenFlagOffsetMin: 0, durationMin: 70, track: DEMO_TRACK, car: 'Demo GT3' },
     fuel: { ...base.fuel, tankL: 18, perLapL: 3 },
     // The demo spends 20 s on pit road either side of a 60 s stop
     pit: { stopSec: 100, tireSec: 0, tiresByDefault: false },
