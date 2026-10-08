@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { demoRace } from './demo';
+import { simpleRace } from './demo';
 import { Detector } from './detector';
 import type { LiveEvent, Sample } from './protocol';
 
@@ -11,7 +11,7 @@ function run(samples: Iterable<[number, Sample]>, start = Date.UTC(2026, 0, 1, 1
 }
 
 describe('detector on the demo race', () => {
-  const { d, events } = run(demoRace({ lapTime: 100, lapsPerStint: 6, stints: 4, stopSec: 60 }));
+  const { d, events } = run(simpleRace({ lapTime: 100, lapsPerStint: 6, stints: 4, stopSec: 60 }));
   const of = (k: LiveEvent['kind']) => events.filter((e) => e.kind === k);
 
   it('finds the three real stops and the drive-through', () => {
@@ -32,8 +32,7 @@ describe('detector on the demo race', () => {
 
   it('measures fuel per lap from green laps only', () => {
     expect(d.state().fuelPerLap).toBeCloseTo(3, 1);
-    expect(d.state().avgLapTime).toBeGreaterThan(100);
-    expect(d.state().avgLapTime).toBeLessThan(101);
+    expect(d.state().avgLapTime).toBeCloseTo(100, 1);
   });
 
   it('sees the caution and the driver swaps', () => {
@@ -43,7 +42,7 @@ describe('detector on the demo race', () => {
   });
 
   it('gives the same ids on another PC that joined late', () => {
-    const all = [...demoRace({ lapTime: 100, lapsPerStint: 6, stints: 4, stopSec: 60 })];
+    const all = [...simpleRace({ lapTime: 100, lapsPerStint: 6, stints: 4, stopSec: 60 })];
     const late = run(all.slice(Math.floor(all.length / 2)));
     const lateExits = late.events.filter((e) => e.kind === 'pitExit').map((e) => e.id);
     const fullExits = of('pitExit').map((e) => e.id);
@@ -54,14 +53,14 @@ describe('detector on the demo race', () => {
 
 describe('detector outside a race', () => {
   it('ignores pit stops in practice', () => {
-    const practice = [...demoRace({ stints: 2 })].map(([t, s]) => [t, { ...s, sessionType: 'Practice' }] as [number, Sample]);
+    const practice = [...simpleRace({ stints: 2 })].map(([t, s]) => [t, { ...s, sessionType: 'Practice' }] as [number, Sample]);
     const { events } = run(practice);
     expect(events.filter((e) => e.kind !== 'lap')).toEqual([]);
   });
 
   it('starts over when the session changes', () => {
     const d = new Detector();
-    const base = [...demoRace({ stints: 2 })];
+    const base = [...simpleRace({ stints: 2 })];
     for (const [t, s] of base) d.push(s, t * 1000);
     expect(d.history.length).toBeGreaterThan(0);
     d.push({ ...base[0][1], sessionNum: 3 }, 0);

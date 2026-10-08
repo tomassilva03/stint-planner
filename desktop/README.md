@@ -23,7 +23,9 @@ Right-click the moon icon near the clock. The top line shows the version you hav
 ("Nightstint helper 0.1.12"), and so does the icon's tooltip when you hover it.
 
 - **Open Nightstint** opens the planner in your browser (so does a left click on the icon).
-- **Demo race (no iRacing)** plays a made-up race, to try everything without driving.
+- **Demo race (no iRacing)** plays a made-up 70 minute race, to try everything without driving:
+  in real time, 10x or 30x faster (about 2.5 minutes). Pick **Demo race, starting now** from the
+  plan menu in Nightstint to see it fill in. **Off** goes back to reading iRacing.
 - **Restart iRacing helper** if something looks stuck.
 - **Open recordings folder** has each session's readings (`<date>-samples.jsonl`) and events.
   Send the samples file to check or debug a session.
