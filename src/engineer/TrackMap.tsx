@@ -15,18 +15,15 @@ interface Props {
   points: number[] | null;
   /** Colour cars by class (more than one class in the race) */
   multiClass: boolean;
-  /** Mirror the map left to right */
-  flip: boolean;
 }
 
 /** Point on the track at a fraction of the lap */
-function placer(points: number[] | null, flip: boolean) {
-  const fx = (x: number) => (flip ? SIZE - x : x);
+function placer(points: number[] | null) {
   if (!points || points.length < 8) {
     const r = SIZE / 2 - PAD;
     return (pct: number): [number, number] => {
       const a = pct * Math.PI * 2 - Math.PI / 2;
-      return [fx(SIZE / 2 + Math.cos(a) * r), SIZE / 2 + Math.sin(a) * r];
+      return [SIZE / 2 + Math.cos(a) * r, SIZE / 2 + Math.sin(a) * r];
     };
   }
   const n = points.length / 2;
@@ -38,7 +35,7 @@ function placer(points: number[] | null, flip: boolean) {
     const f = p - i;
     const x = points[i * 2] + (points[j * 2] - points[i * 2]) * f;
     const y = points[i * 2 + 1] + (points[j * 2 + 1] - points[i * 2 + 1]) * f;
-    return [fx(PAD + x * scale), PAD + y * scale];
+    return [PAD + x * scale, PAD + y * scale];
   };
 }
 
@@ -69,8 +66,8 @@ interface Motion {
 /** How quickly a drawn dot catches up with where the car should be, per second */
 const CATCH_UP = 6;
 
-export function TrackMap({ cars, ourIdx, points, multiClass, flip }: Props) {
-  const place = placer(points, flip);
+export function TrackMap({ cars, ourIdx, points, multiClass }: Props) {
+  const place = placer(points);
   const motion = useRef(new Map<number, Motion>());
   const dots = useRef(new Map<number, SVGGElement>());
   const placeRef = useRef(place);

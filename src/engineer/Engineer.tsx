@@ -12,15 +12,6 @@ import { TrackMap } from './TrackMap';
 import { between, classes, gapText, neighbours, relText, relatives, secs } from './view';
 import './engineer.css';
 
-const FLIP = 'nightstint.map-flip';
-const readFlips = (): Record<string, boolean> => {
-  try {
-    return JSON.parse(localStorage.getItem(FLIP) ?? '{}');
-  } catch {
-    return {};
-  }
-};
-
 interface Props {
   plan: Plan;
   live: Live;
@@ -31,7 +22,6 @@ interface Props {
 export function Engineer({ plan, live, engineer, signedIn }: Props) {
   const { feed, origin } = engineer;
   const [classFilter, setClassFilter] = useState<string>('ours');
-  const [flips, setFlips] = useState(readFlips);
 
   if (!feed) return <NoFeed plan={plan} live={live} engineer={engineer} signedIn={signedIn} />;
 
@@ -39,16 +29,6 @@ export function Engineer({ plan, live, engineer, signedIn }: Props) {
   const field = feed.field;
   const race = (field?.sessionType ?? (s?.isRace ? 'Race' : '')) === 'Race';
   const track = field?.track || s?.track || '';
-  const flip = !!flips[track];
-  const toggleFlip = () => {
-    const next = { ...flips, [track]: !flip };
-    setFlips(next);
-    try {
-      localStorage.setItem(FLIP, JSON.stringify(next));
-    } catch {
-      /* fine: just not remembered */
-    }
-  };
   const name = (raw: string) => displayName(raw, plan.drivers);
   const { ours, ahead, behind } = field ? neighbours(field) : { ours: null, ahead: null, behind: null };
   const lapsLeft = s?.fuelLevel != null && s.fuelPerLap ? s.fuelLevel / s.fuelPerLap : null;
@@ -115,13 +95,8 @@ export function Engineer({ plan, live, engineer, signedIn }: Props) {
       ) : (
         <div className="engineer-grid">
           <section className="panel">
-            <div className="panel-head">
-              <h2>Track</h2>
-              <button className="btn tiny" onClick={toggleFlip} title="Mirror the map if the track looks the wrong way round">
-                Mirror map
-              </button>
-            </div>
-            <TrackMap cars={field.cars} ourIdx={field.ourIdx} points={engineer.outline?.points ?? null} multiClass={multiClass} flip={flip} />
+            <h2>Track</h2>
+            <TrackMap cars={field.cars} ourIdx={field.ourIdx} points={engineer.outline?.points ?? null} multiClass={multiClass} />
             {!engineer.outline && <p className="hint">The track's shape is drawn after the driving PC completes a clean lap. Until then cars run on a ring.</p>}
             {multiClass && (
               <p className="eng-legend">
