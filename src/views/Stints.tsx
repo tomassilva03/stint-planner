@@ -6,6 +6,7 @@ import { AVAIL_LABEL, Field, NumberField, Pill, Select } from '../ui';
 import { LiveStrip } from '../live/LiveStrip';
 import type { Live } from '../live/useLive';
 import { RaceStatePanel, liveRaceState } from '../strategy/RaceStatePanel';
+import { StrategyCard } from '../strategy/StrategyCard';
 import type { ViewProps } from './Overview';
 
 export function Stints({ plan, calc, update, tz, tzName, now, live, readOnly }: ViewProps & { live?: Live; readOnly?: boolean }) {
@@ -32,6 +33,7 @@ export function Stints({ plan, calc, update, tz, tzName, now, live, readOnly }: 
       </div>
       {live && <LiveStrip live={live} readOnly={!!readOnly} plan={plan} />}
       {race && <RaceStatePanel race={race} />}
+      {race && <StrategyCard plan={plan} calc={calc} race={race} />}
       <div className="toolbar">
         {team && (
           <>

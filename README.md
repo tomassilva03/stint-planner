@@ -82,6 +82,13 @@ runs dry, the fuel margin at the planned stop (or the flag) and how confident th
 fuel come from the current stint's green laps, ignoring odd laps, and lean on the rest of the race
 until a stint has three green laps.
 
+Below that, the strategy call says what to do now: keep the plan, pit this lap, stay out longer or save
+fuel, with the time it gains, the fuel left at the stop, a confidence and the reasons. Every option is
+played to the flag at the current pace and fuel use, with full-tank stints after the stop and the plan's
+stop time (the safety car stop time under caution), and compared by how far the car gets before time
+runs out. The plan only changes for a gain of 5 s or more, options with more than a 15% chance of running
+dry are never recommended, and when the plan itself won't make its stop the call turns red.
+
 Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
 
 ## Accounts and sharing (optional)
