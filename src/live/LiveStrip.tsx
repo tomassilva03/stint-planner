@@ -3,6 +3,7 @@ import { raceWindow } from '../engine';
 import type { Plan } from '../model';
 import { duration, lapTime } from '../time';
 import { inRaceWindow } from './apply';
+import { DEMO_SPEEDS } from './demoSession';
 import { displayName } from './names';
 import type { Live } from './useLive';
 import './live.css';
@@ -16,15 +17,21 @@ export function LiveStrip({ live, readOnly, plan }: { live: Live; readOnly: bool
         <span>
           Driving? Run the iRacing helper on this PC and the actual end and laps of each stint fill in by themselves.
         </span>
-        <button className="btn small" onClick={live.enable}>
-          Connect to iRacing
-        </button>
+        <span className="live-demo">
+          <button className="btn small" onClick={live.enable}>
+            Connect to iRacing
+          </button>
+          <button className="btn small" onClick={() => live.startDemo(30)} title="A made-up race played here in the browser, no helper or iRacing needed">
+            Play the demo race
+          </button>
+        </span>
       </div>
     );
   }
+  const inBrowser = live.demoSpeed != null;
   const lapsLeft = s?.fuelLevel != null && s.fuelPerLap ? s.fuelLevel / s.fuelPerLap : null;
   const label =
-    status === 'live' ? (live.source === 'demo' ? 'Live (demo race)' : 'Live') : status === 'waiting' ? 'Helper running, waiting for iRacing' : 'Looking for the helper on this PC…';
+    inBrowser ? 'Demo race' : status === 'live' ? (live.source === 'demo' ? 'Live (demo race)' : 'Live') : status === 'waiting' ? 'Helper running, waiting for iRacing' : 'Looking for the helper on this PC…';
   return (
     <div className={`live-strip is-${status}`} role="status" aria-live="polite">
       <span className="live-dot" aria-hidden />
@@ -47,14 +54,27 @@ export function LiveStrip({ live, readOnly, plan }: { live: Live; readOnly: bool
       {status === 'live' && !inRaceWindow(plan, Date.now()) && (
         <span className="muted">
           Stops don't fill in this plan: its race is on {raceDay(plan)}, not now.
-          {live.source === 'demo' && ' To try the demo, pick “Demo race, starting now” from the plan menu at the top.'}
+          {live.source === 'demo' && ' To see stints fill in, pick “Demo race” from the plan menu at the top.'}
         </span>
       )}
       {readOnly && status === 'live' && <span className="muted">View only: ask the owner for edit access to fill stints.</span>}
       {live.filled > 0 && <span className="muted">{live.filled} stint{live.filled > 1 ? 's' : ''} filled in</span>}
-      <button className="btn tiny" onClick={live.disable}>
-        Disconnect
-      </button>
+      {inBrowser ? (
+        <span className="live-demo">
+          {DEMO_SPEEDS.map((x) => (
+            <button key={x} className={`btn tiny${live.demoSpeed === x ? ' is-on' : ''}`} onClick={() => live.startDemo(x)} title={`Start the demo again at ${x === 1 ? 'real speed' : `${x}x speed`}`}>
+              {x === 1 ? 'Real time' : `${x}x`}
+            </button>
+          ))}
+          <button className="btn tiny" onClick={live.stopDemo}>
+            Stop demo
+          </button>
+        </span>
+      ) : (
+        <button className="btn tiny" onClick={live.disable}>
+          Disconnect
+        </button>
+      )}
     </div>
   );
 }

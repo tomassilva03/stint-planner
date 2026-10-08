@@ -1,4 +1,4 @@
-// The plan for the helper's demo race (src/live/demo.ts), starting now, so trying the
+// The plan for the demo race (src/live/demo.ts, played in the browser or by the helper), so trying the
 // demo fills real stints: two drivers, 1:40 laps, 3 L a lap, a stop every 6 laps. The
 // demo itself doesn't go to plan, so stints come in ahead and behind and the rest recalc.
 import type { Plan } from '../model';
@@ -11,7 +11,7 @@ export function demoPlan(now = Date.now()): Plan {
   const b = newDriver(1, 'Driver B');
   return {
     ...base,
-    name: 'Demo race (for the helper’s demo)',
+    name: 'Demo race',
     // Starts now and runs 70 minutes, like the demo; once the demo runs, its first lap moves the start to
     // the demo's green flag (alignDemoStart), so the plan lines up whenever it was picked
     event: { ...base.event, sessionStart: new Date(now).toISOString(), greenFlagOffsetMin: 0, durationMin: 70, track: DEMO_TRACK, car: 'Demo GT3' },
