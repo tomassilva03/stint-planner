@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Plan } from '../model';
 import { trackLineFuel, type LineFuel } from '../strategy/estimator';
 import { applyEvent } from './apply';
+import { playDemo } from './demoSession';
 import type { FieldSnapshot } from './field';
 import { LIVE_PORT, type HelperMessage, type LiveEvent, type LiveState } from './protocol';
 
@@ -27,8 +28,13 @@ export interface Live {
   outline: { track: string; points: number[] } | null;
   /** Fuel at the start of the current lap, for the estimator */
   lineFuel: LineFuel | null;
+  /** The demo race playing in this browser, at this many times real speed (no helper needed) */
+  demoSpeed: number | null;
   enable: () => void;
   disable: () => void;
+  /** Plays the demo race in the browser; the helper link pauses until it stops */
+  startDemo: (speed: number) => void;
+  stopDemo: () => void;
 }
 
 const readPref = () => {
@@ -63,6 +69,9 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
   const [field, setField] = useState<FieldSnapshot | null>(null);
   const [outline, setOutline] = useState<Live['outline']>(null);
   const [lineFuel, setLineFuel] = useState<LineFuel | null>(null);
+  // A new object restarts the demo, even at the same speed
+  const [demo, setDemo] = useState<{ speed: number } | null>(null);
+  const demoSpeed = demo?.speed ?? null;
 
   // Latest values for the socket callbacks, without reconnecting on every edit
   const planRef = useRef(plan);
@@ -98,7 +107,43 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
   // Switching to another plan (say, the demo plan mid-demo) catches it up on stops already seen
   useEffect(() => fill(eventsRef.current), [plan.id, fill]);
 
+  /** One message from the helper, or from the demo playing in the browser */
+  const handle = useCallback(
+    (m: HelperMessage) => {
+      if (m.type === 'hello') setSource(m.source);
+      else if (m.type === 'waiting') setStatus('waiting');
+      else if (m.type === 'state') {
+        setState(m.state);
+        setLineFuel((prev) => trackLineFuel(prev, m.state));
+        if (m.state.connected) setStatus('live');
+      } else if (m.type === 'history') take(m.events);
+      else if (m.type === 'event') take([m.event]);
+      else if (m.type === 'field') setField(m.field);
+      else if (m.type === 'outline') setOutline({ track: m.track, points: m.points });
+    },
+    [take],
+  );
+
+  // Starting a new race (or going back to the helper) forgets the last one's events and readings
+  const clear = () => {
+    eventsRef.current = [];
+    setEvents([]);
+    setFilled(0);
+    setState(null);
+    setField(null);
+    setOutline(null);
+    setLineFuel(null);
+  };
+
   useEffect(() => {
+    if (!demo) return;
+    setStatus('connecting');
+    const session = playDemo(demo.speed, handle);
+    return () => session.stop();
+  }, [demo, handle]);
+
+  useEffect(() => {
+    if (demo) return;
     if (!on) {
       setStatus('off');
       return;
@@ -116,16 +161,7 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
         } catch {
           return;
         }
-        if (m.type === 'hello') setSource(m.source);
-        else if (m.type === 'waiting') setStatus('waiting');
-        else if (m.type === 'state') {
-          setState(m.state);
-          setLineFuel((prev) => trackLineFuel(prev, m.state));
-          if (m.state.connected) setStatus('live');
-        } else if (m.type === 'history') take(m.events);
-        else if (m.type === 'event') take([m.event]);
-        else if (m.type === 'field') setField(m.field);
-        else if (m.type === 'outline') setOutline({ track: m.track, points: m.points });
+        handle(m);
       };
       ws.onclose = () => {
         if (closed) return;
@@ -141,7 +177,7 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
       clearTimeout(timer);
       ws?.close();
     };
-  }, [on, take]);
+  }, [on, handle, demo]);
 
   return {
     status,
@@ -152,7 +188,10 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
     field,
     outline,
     lineFuel,
+    demoSpeed,
     enable: () => (writePref(true), setOn(true)),
-    disable: () => (writePref(false), setOn(false), setState(null), setField(null)),
+    disable: () => (writePref(false), setOn(false), setDemo(null), clear()),
+    startDemo: (speed) => (clear(), setDemo({ speed })),
+    stopDemo: () => (setDemo(null), clear()),
   };
 }

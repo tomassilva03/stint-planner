@@ -19,3 +19,6 @@
 .live-flag { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--tent); }
 .live-flag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .live-flag.pit { color: var(--now); }
+.live-demo { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.live-demo .btn:last-child { margin-left: 0; }
+.live-demo .btn.tiny.is-on { background: var(--accent-soft); font-weight: 600; }

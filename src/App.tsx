@@ -197,8 +197,8 @@ export default function App() {
               <button role="menuitem" onClick={() => (add(samplePlan()), setMenu(false))}>
                 Example: 24h team race (spreadsheet sample)
               </button>
-              <button role="menuitem" onClick={() => (add(demoPlan()), setMenu(false))}>
-                Demo race, starting now (for the helper’s demo)
+              <button role="menuitem" onClick={() => (add(demoPlan()), live.startDemo(30), setMenu(false))}>
+                Demo race: play a made-up race here, no iRacing needed
               </button>
               <hr />
               <button role="menuitem" onClick={exportJson}>

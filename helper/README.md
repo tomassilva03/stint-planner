@@ -41,9 +41,10 @@ driving. Each stop has the same id on every PC, so it's never applied twice.
 
 Double-click `demo.bat` (or `npm run demo`). It plays a made-up 70 minute race at 10x speed
 (`--speed 30` for faster) that doesn't go to plan: a slower driver, a stint a lap long, a safety car,
-a slow stop, a drive-through and a stint a lap short. In the planner, pick **Demo race, starting
-now** from the plan menu; its start moves to the demo's green flag, and the stops fill in ahead of
-and behind plan.
+a slow stop, a drive-through and a stint a lap short. The planner can play the same race by itself
+(**Demo race** in the plan menu, on any computer), so this is mostly for testing the helper: pick
+**Demo race** in the planner, press **Stop demo**, then **Connect to iRacing**. The demo plan's start
+moves to the demo's green flag, and the stops fill in ahead of and behind plan.
 
 To have the demo stops land inside one of your own plans instead, pass a start time, and use a copy
 of the plan, since the demo fills in real actual ends:

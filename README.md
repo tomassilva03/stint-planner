@@ -101,6 +101,11 @@ dry are never recommended, and when the plan itself won't make its stop the call
 
 Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
 
+To try all of this without iRacing, or on a Mac, pick **Demo race** from the plan menu: the website plays
+a made-up 70 minute race by itself (a slower driver, a long stint, a safety car, a slow stop and a
+penalty) and fills in the demo plan as it goes. The live strip switches its speed between real time,
+10x and 30x (about 2.5 minutes), and the Race engineer tab shows its whole field.
+
 ### Race engineer tab
 
 The **Race engineer** tab follows the race live: a track map with every car, the standings

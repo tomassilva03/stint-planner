@@ -58,7 +58,7 @@ export function Engineer({ plan, live, engineer, signedIn }: Props) {
         s?.isRace && (
           <p className="hint">
             {origin === 'local'
-              ? 'No pit call: this race isn’t the one this plan is for. Open the plan for this race (or “Demo race, starting now” for the demo).'
+              ? 'No pit call: this race isn’t the one this plan is for. Open the plan for this race (or “Demo race” from the plan menu for the demo).'
               : 'No pit call from the driving PC yet: it needs this plan open during its race.'}
           </p>
         )
@@ -381,7 +381,7 @@ function NoFeed({ plan, live, engineer, signedIn }: Props) {
             </span>
           </li>
           <li>
-            To try it without iRacing, pick a speed under “Demo race (no iRacing)” in the helper’s tray menu, then pick “Demo race, starting now” from the plan menu.
+            To try it without iRacing, pick “Demo race” from the plan menu: it plays a made-up race right here in the browser.
           </li>
         </ul>
       </section>
