@@ -37,7 +37,11 @@ describe('recorded Silverstone race', () => {
     expect(d.state().fuelPerLap).toBeCloseTo(1.61, 1);
   });
 
-  it('fills in the first stint of a plan for that race, and only that', () => {
+  it('sees the car take the chequered flag', () => {
+    expect(of('finish').map((e) => e.lapsCompleted)).toEqual([8]);
+  });
+
+  it('fills in the stint before the stop and the one to the flag, and only those', () => {
     const plan = samplePlan();
     plan.stints.forEach((st) => ((st.actualEnd = undefined), (st.actualLaps = undefined)));
     plan.event.sessionStart = new Date(rows[0].at).toISOString();
@@ -45,6 +49,8 @@ describe('recorded Silverstone race', () => {
     const p = applyEvents(plan, events);
     expect(p.stints[0].actualEnd).toBe(new Date(Date.parse(events.find((e) => e.kind === 'pitExit' && e.stopped)!.at)).toISOString());
     expect(p.stints[0].actualLaps).toBe(2);
-    expect(p.stints.filter((st) => st.actualEnd)).toHaveLength(1);
+    expect(p.stints[1].actualEnd).toBe(of('finish')[0].at);
+    expect(p.stints[1].actualLaps).toBe(6);
+    expect(p.stints.filter((st) => st.actualEnd)).toHaveLength(2);
   });
 });

@@ -69,6 +69,8 @@ const describe = (e: LiveEvent) => {
       return 'Caution';
     case 'cautionEnd':
       return 'Green flag';
+    case 'finish':
+      return `Took the chequered flag (lap ${e.lapsCompleted})`;
     case 'driverChange':
       return `Driver now ${e.driverName}`;
   }

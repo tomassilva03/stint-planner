@@ -73,7 +73,7 @@ Switch a plan to **League** at the top, then turn rules on under Race setup → 
 Drivers install the **Nightstint desktop app** on the driving PC (see [desktop/README.md](desktop/README.md)).
 It runs the iRacing helper in the background from the tray, and Nightstint in the browser
 connects to it: each stint's actual end and laps fill in by themselves when the car leaves the
-pits, and a live strip on the Stints tab shows lap times and fuel.
+pits (and the last stint's when it takes the chequered flag), and a live strip on the Stints tab shows lap times and fuel.
 
 Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
 

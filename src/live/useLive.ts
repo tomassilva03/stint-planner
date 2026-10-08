@@ -69,7 +69,7 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
       const next = applyEvent(planRef.current, ev);
       if (!next) continue;
       updateRef.current((p) => applyEvent(p, ev) ?? p);
-      if (ev.kind === 'pitExit') setFilled((n) => n + 1);
+      if (ev.kind === 'pitExit' || ev.kind === 'finish') setFilled((n) => n + 1);
       planRef.current = next;
     }
   }, []);

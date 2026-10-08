@@ -1,7 +1,7 @@
 // Turns a stream of sim samples into race events (pit stops, laps, cautions,
 // driver changes) and a small live snapshot. Pure: no SDK, no clock of its own,
 // so it runs the same in the helper, in tests and in the demo.
-import { isCaution, type LiveEvent, type LiveState, type Sample } from './protocol';
+import { FLAG_CHECKERED, isCaution, type LiveEvent, type LiveState, type Sample } from './protocol';
 
 /** How many recent green laps the averages use */
 const AVG_LAPS = 5;
@@ -27,6 +27,7 @@ export class Detector {
   private greenLaps: number[] = [];
   private greenFuel: number[] = [];
   private last: Sample | null = null;
+  private finished = false;
   readonly history: LiveEvent[] = [];
 
   /** Feed one sample taken at wall clock time `now` (ms). Returns the events it produced. */
@@ -77,6 +78,12 @@ export class Detector {
       out.push({ ...make('driverChange', { driverName: s.driverName }), id: `driverChange-${s.sessionNum}-${s.lapsCompleted}-${s.driverName}` } as LiveEvent);
     }
 
+    // Finish: the first line crossing once the chequered flag is out
+    if (race && !this.finished && s.lapsCompleted > prev.lapsCompleted && (s.flags & FLAG_CHECKERED) !== 0) {
+      this.finished = true;
+      out.push(make('finish', {}));
+    }
+
     // Laps: wait for the new lap time, then emit
     if (this.pending && (s.lastLapTime !== prev.lastLapTime || s.sessionTime - this.pending.sessionTime >= LAP_TIME_WAIT_SEC)) {
       out.push(this.finishLap(s));
@@ -114,6 +121,7 @@ export class Detector {
     this.dirtyLap = false;
     this.lineFuel = null;
     this.pending = null;
+    this.finished = false;
     this.greenLaps = [];
     this.greenFuel = [];
     this.history.length = 0;

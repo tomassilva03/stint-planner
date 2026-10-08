@@ -26,11 +26,12 @@ describe('demo plan', () => {
     const plan = applyEvents(demoPlan(now), demoEvents(now + delay));
     const stints = compute(plan).stints;
     // Laps per stint: on plan, on plan, a lap long, on plan, a lap short
-    expect(plan.stints.map((s) => s.actualLaps ?? null)).toEqual([6, 6, 7, 6, 5, null]);
+    expect(plan.stints.map((s) => s.actualLaps ?? null)).toEqual([6, 6, 7, 6, 5, 5]);
     // Each stop against the plan as it stood (seconds): a bit ahead, a slower driver,
     // a lap later, a safety car and a slow stop, and a stop a lap early
     expect(stints.slice(0, 5).map((s) => Math.round(s.deltaSec ?? NaN))).toEqual([-3, 10, 107, 212, -79]);
-    // The last stint runs to the flag
+    // The last stint runs to the flag, and the finish fills it in
     expect(stints[5].isFinal).toBe(true);
+    expect(plan.stints[5].actualEnd).toBeTruthy();
   });
 });
