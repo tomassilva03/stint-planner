@@ -20,3 +20,6 @@
 .strategy .bad { color: var(--block); }
 .strategy .good { color: var(--open); }
 .strategy tr.now td { font-weight: 600; }
+.strategy-rec { margin: 0 0 8px; }
+.strategy-sim tr.now td { background: var(--accent-soft); }
+.strategy-sim td .local { display: block; font-size: 12px; color: var(--muted); max-width: 32ch; }

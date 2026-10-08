@@ -4,6 +4,7 @@ import { simMinAt } from '../engine';
 import type { Plan } from '../model';
 import { clock, dateLabel, dayClock, delta, duration, lapTime, simClock } from '../time';
 import { NumberField, Pill } from '../ui';
+import { StrategyOptions } from '../strategy/StrategyOptions';
 
 export interface ViewProps {
   plan: Plan;
@@ -143,6 +144,8 @@ export function Overview({ plan, calc, tz, tzName, now, go }: ViewProps) {
           </ul>
         </section>
       )}
+
+      <StrategyOptions plan={plan} calc={calc} />
 
       <div className="grid-2">
         {team && (

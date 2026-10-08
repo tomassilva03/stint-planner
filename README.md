@@ -34,6 +34,16 @@ npm run build:single   # rebuilds the one-file version into dist-single/index.ht
   `replay.ts` plays a recorded or demo race through it for tests.
 - `src/views/`: one file per tab (Overview, Race setup, Drivers, Availability, Stints, Notes).
 
+## Strategy options
+
+The Overview tab plays the race to the flag under a few fuel strategies before the start: **your plan**,
+**aggressive** (every tank to the last full lap, saving fuel all race if that cuts a stop), **balanced**
+(half a lap of fuel in hand at every stop) and **conservative** (a lap and a half in hand). Each runs
+through the same stint maths as the plan, with its drivers, time of day, stop times and planned safety
+cars, and shows laps at the flag, stops, the least fuel in hand at a stop, the fuel risk (the chance a stint
+comes up short if fuel use runs 1.5% over) and the time against the recommended one: the furthest
+strategy that isn't high risk.
+
 ## Maths (same as the spreadsheet)
 
 - Laps per tank = floor(tank ÷ fuel per lap). Fuel saving uses the saving factors from Race setup.
