@@ -48,8 +48,13 @@ site too.
 
 Changes to the app or the helper update installed apps by themselves. Every merge to `main` that
 touches `desktop/`, `helper/` or `src/live/` publishes a new release, and the app installs it the
-next time it starts (or from **Check for updates** in the tray menu). The top line of the tray menu
-shows the version you have.
+next time it starts (or from **Check for updates** in the tray menu). The update installs without
+a window and a Windows notification says when it's done; **Check for updates** also says when you
+already have the latest. The top line of the tray menu shows the version you have.
+
+The installer uses Nightstint's own sidebar and header images, rendered from
+`installer/images.html` by `node scripts/installer-images.mjs` (24-bit BMPs, the only kind the
+Windows installer takes). The rest of its window (buttons, title bar) is drawn by Windows.
 
 Updates are signed, and the app only accepts ones signed with the project's key. The public half
 is in `src-tauri/tauri.conf.json`; the private half is the `TAURI_SIGNING_PRIVATE_KEY` repository
