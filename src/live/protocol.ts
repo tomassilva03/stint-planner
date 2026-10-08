@@ -1,5 +1,6 @@
 // What the iRacing helper on the driving PC sends to the planner.
 // Shared by the helper (helper/) and the web app so both sides agree on the shape.
+import type { FieldSnapshot } from './field';
 
 /** The helper listens on ws://localhost:LIVE_PORT */
 export const LIVE_PORT = 47100;
@@ -80,4 +81,8 @@ export type HelperMessage =
   | { type: 'event'; event: LiveEvent }
   /** Sent on connect: every event of the current race so far, so a refreshed page catches up */
   | { type: 'history'; events: LiveEvent[] }
-  | { type: 'waiting' };
+  | { type: 'waiting' }
+  /** The whole field for the Race engineer tab, a couple of times a second */
+  | { type: 'field'; field: FieldSnapshot }
+  /** The track's shape, once it is known: OUTLINE points as a flat [x, y, ...] list in 0..1000, evenly spaced round the lap */
+  | { type: 'outline'; track: string; points: number[] };

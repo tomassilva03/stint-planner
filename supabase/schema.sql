@@ -96,3 +96,29 @@ begin
   end if;
 end
 $$;
+
+-- Race engineer tab: the PC running the iRacing helper shares the live race on the private
+-- Realtime channel "live:<plan id>", and anyone who can open that plan can watch it (and share
+-- from their own PC). Nothing is stored: Realtime only checks these policies when someone joins.
+create or replace function public.can_use_live(topic text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select case
+    when topic ~ '^live:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      then public.plan_role(substr(topic, 6)::uuid) is not null
+    else false
+  end
+$$;
+
+do $$
+begin
+  -- Only on Supabase itself (a plain Postgres, as in CI, has no Realtime)
+  if to_regclass('realtime.messages') is not null then
+    execute 'drop policy if exists "plan members watch the live race" on realtime.messages';
+    execute $p$create policy "plan members watch the live race" on realtime.messages for select to authenticated
+      using (realtime.messages.extension = 'broadcast' and public.can_use_live((select realtime.topic())))$p$;
+    execute 'drop policy if exists "plan members share the live race" on realtime.messages';
+    execute $p$create policy "plan members share the live race" on realtime.messages for insert to authenticated
+      with check (realtime.messages.extension = 'broadcast' and public.can_use_live((select realtime.topic())))$p$;
+  end if;
+end
+$$;

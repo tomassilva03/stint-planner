@@ -1,0 +1,60 @@
+/* Race engineer tab. Same plain look as the rest: hairline rules, no boxes,
+   colour only for classes, our car (orange, "now") and warnings. */
+.engineer-status { margin-bottom: 4px; }
+.engineer-car { border-top: 0; padding-top: 8px; }
+.eng-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 24px; margin: 0; }
+.eng-stat { min-width: 0; }
+.eng-stat dt { font-size: 13px; color: var(--muted); }
+.eng-stat dd { margin: 0; }
+.eng-stat dd.mono { font: 600 22px/1.25 var(--font-body); font-variant-numeric: tabular-nums; }
+.eng-stat-sub { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eng-stat.warn dd.mono { color: var(--block); }
+.eng-stat.now dd.mono { color: var(--now); }
+
+.engineer-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 40px; align-items: start; }
+@media (max-width: 900px) { .engineer-grid { grid-template-columns: minmax(0, 1fr); } }
+.eng-sub { margin-top: 22px !important; }
+
+.track-map { display: block; width: 100%; max-width: 520px; height: auto; margin: 0 auto; }
+.track-line { fill: none; stroke: var(--line); stroke-width: 26; stroke-linejoin: round; }
+.track-start { stroke: var(--ink); stroke-width: 6; }
+.track-map .car circle { stroke: var(--bg); stroke-width: 4; }
+.track-map .car.in-pit circle { stroke-width: 5; }
+.track-map .car.ours circle { stroke: var(--bg); stroke-width: 6; }
+.track-map .car text { font: 600 26px var(--font-body); fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 6px; }
+.track-map .car.ours text { fill: var(--now); font-size: 32px; }
+
+.eng-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.eng-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.eng-legend i, .cls-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.eng-legend i.ours { background: var(--now); }
+.cls-dot { margin-right: 6px; vertical-align: 1px; }
+
+.eng-table td { padding-block: 5px; }
+.eng-table tr.ours td { color: var(--now); font-weight: 600; }
+.eng-table tr.ours .muted { color: var(--now); opacity: 0.8; }
+.eng-table tr.out td { opacity: 0.5; }
+.eng-table tr.in-pit td { opacity: 0.7; }
+.eng-name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eng-rel { width: 4.5em; }
+.eng-pit { margin-left: 8px; font-size: 12px; font-weight: 600; color: var(--now); }
+
+.eng-steps { margin: 12px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; max-width: 75ch; }
+.eng-steps .btn { margin: 0 0 0 4px; }
+.engineer > .panel:first-child { border-top: 0; padding-top: 2px; }
+.engineer > .live-strip { border-top: 0; padding-top: 0; }
+
+/* Pit call: the one line the pit wall reads first */
+.eng-call { border-top: 0; padding-block: 4px 12px; border-bottom: 1px solid var(--line); }
+.eng-call-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 12px; }
+.eng-call-line { font: 700 26px/1.2 var(--font-body); }
+.eng-call.is-change .eng-call-line { color: var(--accent); }
+.eng-call.urgent .eng-call-line { color: var(--now); }
+.eng-call.is-critical .eng-call-line { color: var(--block); }
+.eng-fuel { margin-bottom: 4px; }
+.eng-why { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+.eng-why li + li { margin-top: 2px; }
+.eng-options { margin-top: 10px; font-size: 14px; }
+.eng-options summary { cursor: pointer; color: var(--muted); }
+.engineer-car { border-top: 0; }
+.track-map { max-height: 480px; }

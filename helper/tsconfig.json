@@ -10,5 +10,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "../src/live/protocol.ts", "../src/live/detector.ts", "../src/live/demo.ts"]
+  "include": ["src", "../src/live/protocol.ts", "../src/live/detector.ts", "../src/live/demo.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

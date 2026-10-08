@@ -91,6 +91,19 @@ dry are never recommended, and when the plan itself won't make its stop the call
 
 Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
 
+### Race engineer tab
+
+The **Race engineer** tab follows the race live: a track map with every car, the standings
+(by class), the cars just ahead of and behind ours on the road, and our car's lap, gaps,
+fuel and pit stops. The helper reads the whole field from iRacing and draws the track's shape
+from the first clean lap the driving PC completes (saved per track, so it is there next time).
+
+Teammates who aren't driving see the same thing remotely: the page on the PC running the helper
+shares a small feed once a second on a private Supabase Realtime channel for the plan, and
+anyone the plan is shared with can watch it (signed in, on a plan saved to an account).
+Nothing is stored. Fuel is only known on the PC that is driving. The channel's access rules are
+at the end of `supabase/schema.sql`.
+
 ## Accounts and sharing (optional)
 
 Without this the app works exactly as before and keeps plans in your browser. With it, you sign in

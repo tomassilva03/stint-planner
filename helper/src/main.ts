@@ -7,9 +7,12 @@
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { demoRace } from '../../src/live/demo.ts';
+import { DemoField, demoOutline } from '../../src/live/demoField.ts';
 import { Detector } from '../../src/live/detector.ts';
+import { FieldTracker, type RawField } from '../../src/live/field.ts';
 import { LIVE_PORT, PROTOCOL_VERSION, type HelperMessage, type LiveEvent, type Sample } from '../../src/live/protocol.ts';
 import { IRacingReader, loadSdk } from './iracing.ts';
+import { OutlineRecorder, OutlineStore } from './outline.ts';
 import { DEFAULT_ORIGINS, startServer } from './server.ts';
 
 const args = process.argv.slice(2);
@@ -38,12 +41,20 @@ const sampleFile = join(logDir, `${day}-samples.jsonl`);
 let lastRecorded: { at: number; key: string } | null = null;
 
 const detector = new Detector();
+// The whole field and the track's shape, for the Race engineer tab
+const field = new FieldTracker();
+const outlines = new OutlineStore(join(logDir, 'tracks'));
+let outline: { track: string; points: number[] } | null = null;
+let fieldTrack = '';
 let waiting = true;
 const server = startServer(port, origins, (send) => {
   send({ type: 'hello', version: PROTOCOL_VERSION, source: demo ? 'demo' : 'iracing' });
   if (waiting) send({ type: 'waiting' });
   send({ type: 'history', events: detector.history });
   send({ type: 'state', state: detector.state() });
+  if (outline) send({ type: 'outline', ...outline });
+  const snap = field.snapshot();
+  if (snap) send({ type: 'field', field: snap });
 });
 server.wss.on('listening', () => {
   console.log(`Stint planner helper is running${demo ? ' (demo race)' : ''}.`);
@@ -97,15 +108,40 @@ function handle(sample: Sample, now: number) {
   }
 }
 
-setInterval(() => server.broadcast({ type: 'state', state: detector.state() }), 500);
+function handleField(f: RawField) {
+  field.push(f);
+  if (f.track && f.track !== fieldTrack) {
+    fieldTrack = f.track;
+    const points = demo ? demoOutline() : outlines.load(f.track);
+    outline = points ? { track: f.track, points } : null;
+    if (outline) server.broadcast({ type: 'outline', ...outline });
+  }
+}
+
+function newOutline(track: string, points: number[]) {
+  // Keep the first good lap: later laps only redraw the same track
+  if (!track || outline?.track === track) return;
+  outline = { track, points };
+  outlines.save(track, points);
+  server.broadcast({ type: 'outline', ...outline });
+  console.log(`Drew the track map for ${track}.`);
+}
+
+setInterval(() => {
+  server.broadcast({ type: 'state', state: detector.state() });
+  const snap = field.snapshot();
+  if (snap) server.broadcast({ type: 'field', field: snap });
+}, 500);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function runDemo() {
   const speed = Number(opt('speed') ?? 10);
   const start = opt('at') ? Date.parse(opt('at')!) : Date.now();
+  const others = new DemoField();
   for (const [t, s] of demoRace(0.5)) {
     handle(s, start + t * 1000);
+    handleField(others.read(t, s));
     await sleep(500 / speed);
   }
   console.log('Demo race finished. Press Ctrl+C to stop.');
@@ -131,6 +167,7 @@ async function runIRacing() {
     const sdk = new mod.IRacingSDK();
     sdk.startSDK();
     const reader = new IRacingReader(sdk);
+    const recorder = new OutlineRecorder();
     let misses = 0;
     while (misses < 50) {
       const s = reader.read(100);
@@ -140,6 +177,11 @@ async function runIRacing() {
       }
       misses = 0;
       handle(s, Date.now());
+      const f = reader.field();
+      if (f) handleField(f);
+      const m = reader.motion();
+      const drawn = m && recorder.push(m.pct, m.speed, m.yaw, m.onPitRoad, m.t);
+      if (drawn) newOutline(s.track, drawn);
       // 10 readings a second is plenty for pit stops and laps
       await sleep(100);
     }

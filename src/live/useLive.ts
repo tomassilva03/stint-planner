@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Plan } from '../model';
 import { trackLineFuel, type LineFuel } from '../strategy/estimator';
 import { applyEvent } from './apply';
+import type { FieldSnapshot } from './field';
 import { LIVE_PORT, type HelperMessage, type LiveEvent, type LiveState } from './protocol';
 
 const KEY = 'stint-planner.live';
@@ -20,6 +21,10 @@ export interface Live {
   events: LiveEvent[];
   /** Stints filled in from the helper during this page visit */
   filled: number;
+  /** Every car in the session, for the Race engineer tab */
+  field: FieldSnapshot | null;
+  /** The track's shape, once the helper knows it */
+  outline: { track: string; points: number[] } | null;
   /** Fuel at the start of the current lap, for the estimator */
   lineFuel: LineFuel | null;
   enable: () => void;
@@ -55,6 +60,8 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
   const [state, setState] = useState<LiveState | null>(null);
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [filled, setFilled] = useState(0);
+  const [field, setField] = useState<FieldSnapshot | null>(null);
+  const [outline, setOutline] = useState<Live['outline']>(null);
   const [lineFuel, setLineFuel] = useState<LineFuel | null>(null);
 
   // Latest values for the socket callbacks, without reconnecting on every edit
@@ -117,11 +124,14 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
           if (m.state.connected) setStatus('live');
         } else if (m.type === 'history') take(m.events);
         else if (m.type === 'event') take([m.event]);
+        else if (m.type === 'field') setField(m.field);
+        else if (m.type === 'outline') setOutline({ track: m.track, points: m.points });
       };
       ws.onclose = () => {
         if (closed) return;
         setStatus('connecting');
         setState(null);
+        setField(null);
         timer = setTimeout(connect, RETRY_MS);
       };
     };
@@ -139,8 +149,10 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
     state,
     events,
     filled,
+    field,
+    outline,
     lineFuel,
     enable: () => (writePref(true), setOn(true)),
-    disable: () => (writePref(false), setOn(false), setState(null)),
+    disable: () => (writePref(false), setOn(false), setState(null), setField(null)),
   };
 }
