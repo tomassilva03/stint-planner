@@ -31,6 +31,7 @@ export interface Sample {
   car: string;
 }
 
+export const FLAG_CHECKERED = 0x0001;
 export const FLAG_CAUTION = 0x4000;
 export const FLAG_CAUTION_WAVING = 0x8000;
 export const isCaution = (flags: number) => (flags & (FLAG_CAUTION | FLAG_CAUTION_WAVING)) !== 0;
@@ -50,7 +51,9 @@ export type LiveEvent =
   | (EventBase & { kind: 'lap'; lapTime: number | null; fuelUsed: number | null; /** No pit visit and no caution during the lap */ green: boolean })
   | (EventBase & { kind: 'cautionStart' })
   | (EventBase & { kind: 'cautionEnd' })
-  | (EventBase & { kind: 'driverChange'; driverName: string });
+  | (EventBase & { kind: 'driverChange'; driverName: string })
+  /** Our car crossed the line under the chequered flag */
+  | (EventBase & { kind: 'finish' });
 
 /** Snapshot for the live strip, sent a couple of times a second. */
 export interface LiveState {

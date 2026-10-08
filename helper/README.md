@@ -3,7 +3,7 @@
 A small program for the PC that is driving. It reads iRacing's live data and sends it to the
 stint planner open in your browser on the same PC. When the car leaves the pits after a stop, the
 planner fills in that stint's **Actual end** and **Laps** by itself, and the rest of the race
-recalculates.
+recalculates. When the car takes the chequered flag, the last stint fills in the same way.
 
 Windows only, because the iRacing SDK only exists there.
 

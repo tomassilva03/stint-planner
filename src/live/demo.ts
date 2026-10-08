@@ -2,7 +2,7 @@
 // helper plays: a 70 minute team race that doesn't go to plan, so stints land ahead
 // of and behind the demo plan (src/samples/demo.ts). `simpleRace` is an even race
 // for tests. Both are deterministic: the same race every time.
-import { FLAG_CAUTION, type Sample } from './protocol';
+import { FLAG_CAUTION, FLAG_CHECKERED, type Sample } from './protocol';
 
 export interface DemoStint {
   driver: string;
@@ -187,7 +187,8 @@ export function* playRace(script: DemoScript, step = 0.5): Generator<[number, Sa
         onPitRoad,
         inPitStall,
         fuelLevel: Math.max(0, Math.round(fuel * 100) / 100),
-        flags: caution ? FLAG_CAUTION : 0,
+        // A timed race shows the chequered flag once time is up; the car finishes at its next crossing
+        flags: (caution ? FLAG_CAUTION : 0) | (script.durationSec != null && t >= script.durationSec ? FLAG_CHECKERED : 0),
         driverName,
         track: 'Demo Raceway',
         car: 'Demo GT3',

@@ -30,6 +30,26 @@ export function applyPitExit(plan: Plan, ev: LiveEvent): Plan | null {
   const calc = compute(plan).stints[i];
   if (!calc || calc.isFinal || calc.isSurplus) return null;
 
+  return fillEnd(plan, i, ev, at);
+}
+
+/**
+ * Taking the chequered flag ends the first unfinished stint, normally the last one:
+ * it fills the actual end and laps the same way a stop does.
+ */
+export function applyFinish(plan: Plan, ev: LiveEvent): Plan | null {
+  if (ev.kind !== 'finish') return null;
+  if (plan.stints.some((s) => s.liveId === ev.id)) return null;
+  const at = Date.parse(ev.at);
+  if (!inRaceWindow(plan, at)) return null;
+  let i = 0;
+  plan.stints.forEach((s, k) => s.actualEnd && (i = k + 1));
+  if (i >= plan.stints.length) return null;
+  return fillEnd(plan, i, ev, at);
+}
+
+/** Fills stint i's actual end and laps from a stop or the finish */
+function fillEnd(plan: Plan, i: number, ev: LiveEvent, at: number): Plan {
   const prev = plan.stints[i - 1];
   const before = i === 0 ? 0 : prev.lapsAtEnd ?? sumLaps(plan, i);
   const next = structuredClone(plan);
@@ -69,7 +89,7 @@ export function alignDemoStart(plan: Plan, ev: LiveEvent): Plan | null {
 
 /** Applies one race event; null when it changes nothing */
 export function applyEvent(plan: Plan, ev: LiveEvent): Plan | null {
-  return alignDemoStart(plan, ev) ?? applyPitExit(plan, ev);
+  return alignDemoStart(plan, ev) ?? applyPitExit(plan, ev) ?? applyFinish(plan, ev);
 }
 
 /** Applies every event in order; returns the plan unchanged (same object) when nothing applies. */
