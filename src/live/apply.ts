@@ -51,9 +51,30 @@ function sumLaps(plan: Plan, n: number): number | undefined {
   return total;
 }
 
-/** Applies every pit exit in order; returns the plan unchanged (same object) when nothing applies. */
+/** The track name the helper's demo race reports, and the demo plan uses */
+export const DEMO_TRACK = 'Demo Raceway';
+
+/**
+ * The demo race starts whenever it's picked in the tray, so the demo plan takes its
+ * green flag from the demo's first lap. Only before any stint has an actual end.
+ */
+export function alignDemoStart(plan: Plan, ev: LiveEvent): Plan | null {
+  if (ev.kind !== 'lap' || ev.lapsCompleted !== 1 || !ev.lapTime) return null;
+  if (plan.event.track !== DEMO_TRACK || plan.stints.some((s) => s.actualEnd)) return null;
+  const green = Date.parse(ev.at) - ev.lapTime * 1000;
+  if (Math.abs(green - raceWindow(plan).raceStart) < 1000) return null;
+  const sessionStart = new Date(green - plan.event.greenFlagOffsetMin * 60_000).toISOString();
+  return { ...plan, event: { ...plan.event, sessionStart } };
+}
+
+/** Applies one race event; null when it changes nothing */
+export function applyEvent(plan: Plan, ev: LiveEvent): Plan | null {
+  return alignDemoStart(plan, ev) ?? applyPitExit(plan, ev);
+}
+
+/** Applies every event in order; returns the plan unchanged (same object) when nothing applies. */
 export function applyEvents(plan: Plan, events: LiveEvent[]): Plan {
   let p = plan;
-  for (const ev of events) p = applyPitExit(p, ev) ?? p;
+  for (const ev of events) p = applyEvent(p, ev) ?? p;
   return p;
 }

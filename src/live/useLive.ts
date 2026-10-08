@@ -3,7 +3,7 @@
 // browser prompt about local network access.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Plan } from '../model';
-import { applyPitExit } from './apply';
+import { applyEvent } from './apply';
 import { LIVE_PORT, type HelperMessage, type LiveEvent, type LiveState } from './protocol';
 
 const KEY = 'stint-planner.live';
@@ -15,7 +15,7 @@ export interface Live {
   status: LinkStatus;
   source: 'iracing' | 'demo' | null;
   state: LiveState | null;
-  /** Most recent race events, newest last */
+  /** Race events so far (up to the last 200), newest last */
   events: LiveEvent[];
   /** Stints filled in from the helper during this page visit */
   filled: number;
@@ -66,17 +66,18 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
   const fill = useCallback((list: LiveEvent[]) => {
     if (readOnlyRef.current) return;
     for (const ev of list) {
-      if (!applyPitExit(planRef.current, ev)) continue;
-      updateRef.current((p) => applyPitExit(p, ev) ?? p);
-      planRef.current = applyPitExit(planRef.current, ev) ?? planRef.current;
-      setFilled((n) => n + 1);
+      const next = applyEvent(planRef.current, ev);
+      if (!next) continue;
+      updateRef.current((p) => applyEvent(p, ev) ?? p);
+      if (ev.kind === 'pitExit') setFilled((n) => n + 1);
+      planRef.current = next;
     }
   }, []);
 
   const take = useCallback(
     (list: LiveEvent[]) => {
       const seen = new Set(eventsRef.current.map((e) => e.id));
-      eventsRef.current = [...eventsRef.current, ...list.filter((e) => !seen.has(e.id))].slice(-50);
+      eventsRef.current = [...eventsRef.current, ...list.filter((e) => !seen.has(e.id))].slice(-200);
       setEvents(eventsRef.current);
       fill(list);
     },

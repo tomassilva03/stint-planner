@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { compute } from '../engine';
 import { applyEvents } from '../live/apply';
 import { demoRace } from '../live/demo';
 import { Detector } from '../live/detector';
@@ -18,10 +19,14 @@ describe('demo plan', () => {
 
   it.each([
     ['right away', 0],
+    ['5 minutes earlier', -5 * 60_000],
     ['50 minutes later', 50 * 60_000],
+    ['a day later', 24 * 3600_000],
   ])('fills the first three stints when the demo starts %s', (_, delay) => {
     const plan = applyEvents(demoPlan(now), demoEvents(now + delay));
     expect(plan.stints.map((s) => s.actualLaps ?? null).slice(0, 4)).toEqual([6, 6, 6, null]);
     expect(plan.stints.filter((s) => s.actualEnd)).toHaveLength(3);
+    // Lined up with the demo: each stop within a few seconds of the plan
+    for (const s of compute(plan).stints.slice(0, 3)) expect(Math.abs(s.deltaSec ?? Infinity)).toBeLessThan(5);
   });
 });
