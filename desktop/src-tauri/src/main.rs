@@ -190,6 +190,8 @@ fn open_planner(app: &AppHandle) {
 }
 
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
+    let version = app.package_info().version.to_string();
+    let about = MenuItem::with_id(app, "version", format!("Nightstint helper {version}"), false, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Open Nightstint", true, None::<&str>)?;
     let demo = CheckMenuItem::with_id(app, "demo", "Demo race (no iRacing)", true, false, None::<&str>)?;
     let restart = MenuItem::with_id(app, "restart", "Restart iRacing helper", true, None::<&str>)?;
@@ -197,12 +199,12 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
     let autostart = CheckMenuItem::with_id(app, "autostart", "Start with Windows", true, autostart_on, None::<&str>)?;
     let updates = MenuItem::with_id(app, "update", "Check for updates", true, None::<&str>)?;
-    let version = format!("Nightstint {}", app.package_info().version);
-    let about = MenuItem::with_id(app, "version", version, false, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Nightstint", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
+            &about,
+            &PredefinedMenuItem::separator(app)?,
             &open,
             &PredefinedMenuItem::separator(app)?,
             &demo,
@@ -212,13 +214,12 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             &autostart,
             &updates,
             &PredefinedMenuItem::separator(app)?,
-            &about,
             &quit,
         ],
     )?;
 
     let mut tray = TrayIconBuilder::with_id("main")
-        .tooltip("Nightstint: iRacing helper running")
+        .tooltip(format!("Nightstint helper {version}: running"))
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(move |app, event| match event.id().as_ref() {
