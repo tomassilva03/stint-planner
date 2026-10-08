@@ -1,0 +1,10 @@
+/* Race state and strategy under the live strip. Same plain look: hairlines, no boxes. */
+.race-state { margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.race-state-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.race-state-head h3 { margin: 4px 0; font: 600 14px/1.3 var(--font-body); }
+.race-state-line { margin: 2px 0 8px; font-weight: 600; }
+.race-state .stat-value { font-size: 20px; }
+.race-state .warn, .race-state-line.warn { color: var(--tent); }
+.race-state .bad { color: var(--block); }
+.race-state .good { color: var(--open); }
+.race-state-line.good { color: var(--ink); }
