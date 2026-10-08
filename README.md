@@ -29,6 +29,9 @@ npm run build:single   # rebuilds the one-file version into dist-single/index.ht
   driver time limits, minimum stops) live under `rules` and are off for special events.
 - `src/engine.ts`: all the stint maths, auto-fill of stints to the flag, and auto-assign.
 - `src/engine.test.ts`: reproduces the 22 stint end times of the example 24h sheet to within 1 second.
+- `src/strategy/`: the race strategist. `estimator.ts` turns live laps and fuel into the current race state
+  (robust pace and fuel per lap, the lap the tank runs dry, fuel margin, confidence). It only estimates;
+  `replay.ts` plays a recorded or demo race through it for tests.
 - `src/views/`: one file per tab (Overview, Race setup, Drivers, Availability, Stints, Notes).
 
 ## Maths (same as the spreadsheet)
@@ -74,6 +77,17 @@ Drivers install the **Nightstint desktop app** on the driving PC (see [desktop/R
 It runs the iRacing helper in the background from the tray, and Nightstint in the browser
 connects to it: each stint's actual end and laps fill in by themselves when the car leaves the
 pits (and the last stint's when it takes the chequered flag), and a live strip on the Stints tab shows lap times and fuel.
+Under it, **Right now** shows the estimated pace and fuel per lap against the plan, the lap the tank
+runs dry, the fuel margin at the planned stop (or the flag) and how confident the estimate is. Pace and
+fuel come from the current stint's green laps, ignoring odd laps, and lean on the rest of the race
+until a stint has three green laps.
+
+Below that, the strategy call says what to do now: keep the plan, pit this lap, stay out longer or save
+fuel, with the time it gains, the fuel left at the stop, a confidence and the reasons. Every option is
+played to the flag at the current pace and fuel use, with full-tank stints after the stop and the plan's
+stop time (the safety car stop time under caution), and compared by how far the car gets before time
+runs out. The plan only changes for a gain of 5 s or more, options with more than a 15% chance of running
+dry are never recommended, and when the plan itself won't make its stop the call turns red.
 
 Developers can also run the helper by hand from `helper/`; see [helper/README.md](helper/README.md).
 
