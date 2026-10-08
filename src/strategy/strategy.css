@@ -8,3 +8,15 @@
 .race-state .bad { color: var(--block); }
 .race-state .good { color: var(--open); }
 .race-state-line.good { color: var(--ink); }
+.strategy { margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.strategy-call { margin: 2px 0; font: 600 22px/1.25 var(--font-display); }
+.strategy.is-change .strategy-call { color: var(--accent); }
+.strategy.is-critical .strategy-call, .strategy.is-critical h3 { color: var(--block); }
+.strategy-facts { margin: 0 0 6px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.strategy-why { margin: 4px 0 6px; padding-left: 18px; font-size: 14px; }
+.strategy-why li { margin: 2px 0; }
+.strategy-options summary { cursor: pointer; color: var(--accent); font-size: 14px; margin: 4px 0; }
+.strategy-options .table { margin-top: 4px; }
+.strategy .bad { color: var(--block); }
+.strategy .good { color: var(--open); }
+.strategy tr.now td { font-weight: 600; }
