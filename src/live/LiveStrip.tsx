@@ -1,11 +1,13 @@
 // The live strip on top of the Stints tab: link status and what the car is doing now.
-import type { Driver } from '../model';
+import { raceWindow } from '../engine';
+import type { Plan } from '../model';
 import { duration, lapTime } from '../time';
+import { inRaceWindow } from './apply';
 import { displayName } from './names';
 import type { Live } from './useLive';
 import './live.css';
 
-export function LiveStrip({ live, readOnly, drivers }: { live: Live; readOnly: boolean; drivers: Driver[] }) {
+export function LiveStrip({ live, readOnly, plan }: { live: Live; readOnly: boolean; plan: Plan }) {
   const { status, state: s } = live;
   if (status === 'off') {
     return (
@@ -31,7 +33,7 @@ export function LiveStrip({ live, readOnly, drivers }: { live: Live; readOnly: b
         <dl className="live-values">
           {s.caution && <span className="live-flag">Caution</span>}
           {s.onPitRoad && <span className="live-flag pit">In pits</span>}
-          {s.driverName && <Item k="Driver" v={displayName(s.driverName, drivers)} />}
+          {s.driverName && <Item k="Driver" v={displayName(s.driverName, plan.drivers)} />}
           <Item k="Lap" v={String(s.lapsCompleted)} />
           <Item k="Last lap" v={s.lastLapTime ? lapTime(s.lastLapTime) : '–'} mono />
           <Item k="Avg" v={s.avgLapTime ? lapTime(s.avgLapTime) : '–'} mono />
@@ -42,6 +44,12 @@ export function LiveStrip({ live, readOnly, drivers }: { live: Live; readOnly: b
         </dl>
       )}
       {status === 'live' && s && !s.isRace && <span className="muted">Stints fill in during the race session only.</span>}
+      {status === 'live' && !inRaceWindow(plan, Date.now()) && (
+        <span className="muted">
+          Stops don't fill in this plan: its race is on {raceDay(plan)}, not now.
+          {live.source === 'demo' && ' To try the demo, pick “Demo race, starting now” from the plan menu at the top.'}
+        </span>
+      )}
       {readOnly && status === 'live' && <span className="muted">View only: ask the owner for edit access to fill stints.</span>}
       {live.filled > 0 && <span className="muted">{live.filled} stint{live.filled > 1 ? 's' : ''} filled in</span>}
       <button className="btn tiny" onClick={live.disable}>
@@ -57,3 +65,6 @@ const Item = ({ k, v, mono }: { k: string; v: string; mono?: boolean }) => (
     <dd className={mono ? 'mono' : ''}>{v}</dd>
   </div>
 );
+
+const raceDay = (plan: Plan) =>
+  new Date(raceWindow(plan).raceStart).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });

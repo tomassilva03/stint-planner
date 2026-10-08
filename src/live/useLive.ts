@@ -61,11 +61,9 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
   updateRef.current = update;
   readOnlyRef.current = readOnly;
 
-  const take = useCallback((list: LiveEvent[]) => {
-    setEvents((prev) => {
-      const seen = new Set(prev.map((e) => e.id));
-      return [...prev, ...list.filter((e) => !seen.has(e.id))].slice(-50);
-    });
+  const eventsRef = useRef<LiveEvent[]>([]);
+
+  const fill = useCallback((list: LiveEvent[]) => {
     if (readOnlyRef.current) return;
     for (const ev of list) {
       if (!applyPitExit(planRef.current, ev)) continue;
@@ -74,6 +72,19 @@ export function useLive(plan: Plan, update: (fn: (p: Plan) => Plan) => void, rea
       setFilled((n) => n + 1);
     }
   }, []);
+
+  const take = useCallback(
+    (list: LiveEvent[]) => {
+      const seen = new Set(eventsRef.current.map((e) => e.id));
+      eventsRef.current = [...eventsRef.current, ...list.filter((e) => !seen.has(e.id))].slice(-50);
+      setEvents(eventsRef.current);
+      fill(list);
+    },
+    [fill],
+  );
+
+  // Switching to another plan (say, the demo plan mid-demo) catches it up on stops already seen
+  useEffect(() => fill(eventsRef.current), [plan.id, fill]);
 
   useEffect(() => {
     if (!on) {

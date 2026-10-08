@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { baseLapTime, compute } from './engine';
 import { migrate, newPlan, uid, type Plan } from './model';
 import { samplePlan } from './sample';
+import { demoPlan } from './samples/demo';
 import { nurburgringPlan } from './samples/nurburgring';
 import { usePlans } from './store';
 import { offsetLabel } from './time';
@@ -186,6 +187,9 @@ export default function App() {
               </button>
               <button role="menuitem" onClick={() => (add(samplePlan()), setMenu(false))}>
                 Example: 24h team race (spreadsheet sample)
+              </button>
+              <button role="menuitem" onClick={() => (add(demoPlan()), setMenu(false))}>
+                Demo race, starting now (for the helper’s demo)
               </button>
               <hr />
               <button role="menuitem" onClick={exportJson}>

@@ -5,6 +5,12 @@ import type { LiveEvent } from './protocol';
 
 const HOUR = 3600_000;
 
+/** Whether a moment falls in this plan's race (up to an hour after the planned end), when stops fill stints */
+export function inRaceWindow(plan: Plan, at: number): boolean {
+  const { raceStart, raceEnd } = raceWindow(plan);
+  return at > raceStart && at < raceEnd + HOUR;
+}
+
 /**
  * A pit exit after a real stop ends the first unfinished stint: it fills the actual
  * end and, when the lap count can be worked out, the actual laps.
@@ -14,9 +20,8 @@ export function applyPitExit(plan: Plan, ev: LiveEvent): Plan | null {
   if (ev.kind !== 'pitExit' || !ev.stopped) return null;
   if (plan.stints.some((s) => s.liveId === ev.id)) return null;
   const at = Date.parse(ev.at);
-  const { raceStart, raceEnd } = raceWindow(plan);
   // Only during this plan's race, so an open plan for another event is never touched
-  if (!(at > raceStart && at < raceEnd + HOUR)) return null;
+  if (!inRaceWindow(plan, at)) return null;
   // The stint after the last one with an actual end
   let i = 0;
   plan.stints.forEach((s, k) => s.actualEnd && (i = k + 1));
