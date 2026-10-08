@@ -15,6 +15,8 @@ import { Overview } from './views/Overview';
 import { Setup } from './views/Setup';
 import { Stints } from './views/Stints';
 import { useLive } from './live/useLive';
+import { Engineer } from './engineer/Engineer';
+import { useEngineer } from './engineer/feed';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -23,6 +25,7 @@ const TABS = [
   { id: 'availability', label: 'Availability', team: true },
   { id: 'stints', label: 'Stints' },
   { id: 'notes', label: 'Notes' },
+  { id: 'engineer', label: 'Race engineer' },
 ];
 
 const THEMES = ['auto', 'dark', 'light'] as const;
@@ -103,6 +106,7 @@ export default function App() {
 
   const calc = useMemo(() => compute(plan), [plan]);
   const live = useLive(plan, update, cloud.readOnly);
+  const engineer = useEngineer(plan.id, live, cloud.session, !!cloud.meta[plan.id]);
   const team = plan.mode === 'team';
   const visibleTabs = TABS.filter((t) => !t.team || team);
   const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : 'overview';
@@ -303,6 +307,8 @@ export default function App() {
               return <Stints {...props} live={live} readOnly={cloud.readOnly} />;
             case 'notes':
               return <Notes {...props} />;
+            case 'engineer':
+              return <Engineer plan={plan} live={live} engineer={engineer} signedIn={!!cloud.session} />;
             default:
               return <Overview {...props} />;
           }
