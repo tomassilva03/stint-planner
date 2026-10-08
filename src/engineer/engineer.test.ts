@@ -4,7 +4,7 @@ import { DEMO_OUR_IDX, DemoField } from '../live/demoField';
 import { Detector } from '../live/detector';
 import { FieldTracker, type FieldSnapshot } from '../live/field';
 import type { LiveEvent } from '../live/protocol';
-import { pickFeed, STALE_MS, summarise, type EngineerFeed } from './feed';
+import { chooseFeed, pickFeed, STALE_MS, summarise, type EngineerFeed } from './feed';
 import { classes, gapText, neighbours, relatives } from './view';
 
 /** The demo race up to `until` seconds, as the helper would see it */
@@ -74,5 +74,21 @@ describe('choosing a feed', () => {
     expect(pickFeed([feed('a', now - 500, null), feed('b', now - 900, 20)], now)?.from).toBe('b');
     expect(pickFeed([feed('a', now - 500, null), feed('b', now - STALE_MS - 1, 20)], now)?.from).toBe('a');
     expect(pickFeed([], now)).toBeNull();
+  });
+
+  it('shows the driver’s feed on the pit wall, where this PC’s helper can’t read the fuel', () => {
+    const now = 100_000;
+    const pitWall = feed('me', now, null);
+    const driver = feed('driver', now - 800, 20);
+    expect(chooseFeed(pitWall, [driver], now)).toEqual({ feed: driver, origin: 'remote' });
+    // Driving here: this PC's own feed
+    const driving = feed('me', now, 18);
+    expect(chooseFeed(driving, [driver], now)).toEqual({ feed: driving, origin: 'local' });
+    // Nobody else knows the fuel either, or the driver went quiet: this PC's own feed
+    expect(chooseFeed(pitWall, [feed('other', now - 200, null)], now).origin).toBe('local');
+    expect(chooseFeed(pitWall, [feed('driver', now - STALE_MS - 1, 20)], now).origin).toBe('local');
+    // No helper here
+    expect(chooseFeed(null, [driver], now)).toEqual({ feed: driver, origin: 'remote' });
+    expect(chooseFeed(null, [], now)).toEqual({ feed: null, origin: null });
   });
 });
