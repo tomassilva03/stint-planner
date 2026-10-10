@@ -19,12 +19,15 @@ import { Engineer } from './engineer/Engineer';
 import { useEngineer } from './engineer/feed';
 import { pitCall } from './engineer/pitCall';
 import { liveRaceState } from './strategy/RaceStatePanel';
+import { Practice } from './practice/Practice';
+import { recordLaps } from './practice/practice';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'setup', label: 'Race setup' },
   { id: 'drivers', label: 'Drivers', team: true },
   { id: 'availability', label: 'Availability', team: true },
+  { id: 'practice', label: 'Practice' },
   { id: 'stints', label: 'Stints' },
   { id: 'notes', label: 'Notes' },
   { id: 'engineer', label: 'Race engineer' },
@@ -111,6 +114,11 @@ export default function App() {
   // The pit call for the Race engineer tab, worked out here when this PC runs the helper
   const race = liveRaceState(live, plan, calc);
   const call = race ? pitCall(plan, calc, race) : null;
+  // Practice laps from the helper are saved to the plan while recording is on
+  useEffect(() => {
+    if (!plan.practice.recording || cloud.readOnly) return;
+    if (recordLaps(plan, live.events, live.state)) update((p) => recordLaps(p, live.events, live.state) ?? p);
+  }, [plan, live.events, live.state, cloud.readOnly, update]);
   const engineer = useEngineer(plan.id, live, cloud.session, !!cloud.meta[plan.id], call);
   const team = plan.mode === 'team';
   const visibleTabs = TABS.filter((t) => !t.team || team);
@@ -310,6 +318,8 @@ export default function App() {
               return <Availability {...props} />;
             case 'stints':
               return <Stints {...props} live={live} readOnly={cloud.readOnly} />;
+            case 'practice':
+              return <Practice plan={plan} update={update} live={live} readOnly={cloud.readOnly} />;
             case 'notes':
               return <Notes {...props} />;
             case 'engineer':

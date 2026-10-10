@@ -80,6 +80,32 @@ export interface ChecklistItem {
   text: string;
 }
 
+/** One lap recorded from the iRacing helper during practice */
+export interface PracticeLap {
+  /** The helper's lap event id plus its time, so a lap is never recorded twice */
+  id: string;
+  /** When the lap ended (UTC ISO) */
+  at: string;
+  /** The car's laps completed at the end of this lap */
+  lap: number;
+  lapTime: number | null;
+  fuelUsed: number | null;
+  /** No pit visit and no caution during the lap: false for in and out laps */
+  green: boolean;
+  /** Who was driving, as iRacing names them */
+  driver: string;
+  track: string;
+  car: string;
+  /** Left out of the averages by hand */
+  excluded?: boolean;
+}
+
+export interface Practice {
+  /** Laps from the helper are added to this plan while on */
+  recording: boolean;
+  laps: PracticeLap[];
+}
+
 export interface Plan {
   schema: 1;
   id: string;
@@ -130,6 +156,7 @@ export interface Plan {
     general: string;
   };
   checklist: ChecklistItem[];
+  practice: Practice;
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -196,6 +223,7 @@ export function newPlan(mode: Mode = 'team'): Plan {
     rules: defaultRules(),
     notes: { qualifyingDriver: '', registeringDrivers: '', goals: '', retirement: '', comms: '', setupLink: '', practice: '', general: '' },
     checklist: defaultChecklist(),
+    practice: { recording: false, laps: [] },
   };
 }
 
@@ -220,6 +248,7 @@ export function migrate(raw: any): Plan {
     availability: raw?.availability ?? {},
     stints: raw?.stints ?? [],
     checklist: raw?.checklist ?? base.checklist,
+    practice: { ...base.practice, ...raw?.practice, laps: raw?.practice?.laps ?? [] },
     schema: 1,
   };
 }
