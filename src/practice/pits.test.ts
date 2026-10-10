@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveState } from '../live/protocol';
 import type { PracticeLap, PracticeStop } from '../model';
-import { PitWatcher, stopSecFor, summarizeStops } from './pits';
+import { PitWatcher, summarizeStops } from './pits';
+import { newPlan, setPitTimes } from '../model';
 
 const st = (onPitRoad: boolean, fuelLevel: number | null, lapsCompleted = 10): LiveState => ({
   connected: true, isRace: false, track: 'T', car: 'C', driverName: 'Me', lapsCompleted, lastLapTime: null, avgLapTime: null,
@@ -48,6 +49,10 @@ describe('pit stop practice', () => {
     expect(s.fillRate).toBe(2);
     expect(s.laneLossSec).toBe(25);
     expect(s.tireSec).toBe(5);
-    expect(stopSecFor(25, 2, 100)).toBe(75);
+    const plan = newPlan('solo');
+    plan.fuel.tankL = 100;
+    // Refuel rate alone keeps the stop time as typed; with the lane loss it's worked out
+    expect(setPitTimes(plan, { fillRate: 2 }).pit.stopSec).toBe(plan.pit.stopSec);
+    expect(setPitTimes(setPitTimes(plan, { fillRate: 2 }), { laneLossSec: 25 }).pit.stopSec).toBe(75);
   });
 });

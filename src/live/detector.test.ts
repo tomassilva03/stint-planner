@@ -67,3 +67,21 @@ describe('detector outside a race', () => {
     expect(d.history).toEqual([]);
   });
 });
+
+describe('detector incident points', () => {
+  it('counts the points picked up on each lap', () => {
+    const withIncidents = function* () {
+      for (const [t, s] of simpleRace({ lapTime: 100, lapsPerStint: 6, stints: 2, stopSec: 60 }))
+        yield [t, { ...s, incidents: s.lapsCompleted >= 9 ? 6 : s.lapsCompleted >= 4 ? 2 : 0 }] as [number, Sample];
+    };
+    const { d, events } = run(withIncidents());
+    const inc = events.flatMap((e) => (e.kind === 'lap' && e.incidents ? [[e.lapsCompleted, e.incidents]] : []));
+    expect(inc).toEqual([[4, 2], [9, 4]]);
+    expect(d.state().incidents).toBe(6);
+  });
+
+  it('leaves incidents out when the sim does not report them', () => {
+    const { events } = run(simpleRace({ lapTime: 100, lapsPerStint: 3, stints: 1 }));
+    expect(events.some((e) => 'incidents' in e)).toBe(false);
+  });
+});

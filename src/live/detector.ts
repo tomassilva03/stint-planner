@@ -14,6 +14,7 @@ interface PendingLap {
   sessionTime: number;
   fuel: number | null;
   green: boolean;
+  incidents: number | null;
 }
 
 export class Detector {
@@ -23,6 +24,7 @@ export class Detector {
   /** A pit visit or caution happened since the last line crossing */
   private dirtyLap = false;
   private lineFuel: number | null = null;
+  private lineIncidents: number | null = null;
   private pending: PendingLap | null = null;
   private greenLaps: number[] = [];
   private greenFuel: number[] = [];
@@ -45,6 +47,7 @@ export class Detector {
     if (!prev) {
       this.prev = s;
       this.lineFuel = s.fuelLevel;
+      this.lineIncidents = s.incidents ?? null;
       // We didn't see this lap start (often the race start itself), so it isn't a clean lap
       this.dirtyLap = true;
       return out;
@@ -91,8 +94,11 @@ export class Detector {
     if (s.lapsCompleted > prev.lapsCompleted) {
       if (this.pending) out.push(this.finishLap(prev));
       const fuelUsed = this.lineFuel != null && s.fuelLevel != null ? this.lineFuel - s.fuelLevel : null;
-      this.pending = { laps: s.lapsCompleted, at: now, sessionTime: s.sessionTime, fuel: fuelUsed, green: !this.dirtyLap && s.lapsCompleted - prev.lapsCompleted === 1 };
+      const inc = s.incidents ?? null;
+      const incidents = inc != null && this.lineIncidents != null ? Math.max(0, inc - this.lineIncidents) : null;
+      this.pending = { laps: s.lapsCompleted, at: now, sessionTime: s.sessionTime, fuel: fuelUsed, green: !this.dirtyLap && s.lapsCompleted - prev.lapsCompleted === 1, incidents };
       this.lineFuel = s.fuelLevel;
+      this.lineIncidents = inc;
       this.dirtyLap = s.onPitRoad || caution;
       if (s.lastLapTime !== prev.lastLapTime) out.push(this.finishLap(s));
     }
@@ -111,7 +117,10 @@ export class Detector {
       if (lapTime) this.greenLaps = [...this.greenLaps, lapTime].slice(-AVG_LAPS);
       if (fuelUsed) this.greenFuel = [...this.greenFuel, fuelUsed].slice(-AVG_LAPS);
     }
-    return { kind: 'lap', id: `lap-${s.sessionNum}-${l.laps}`, at: new Date(l.at).toISOString(), lapsCompleted: l.laps, lapTime, fuelUsed, green: l.green };
+    const lap: LiveEvent = { kind: 'lap', id: `lap-${s.sessionNum}-${l.laps}`, at: new Date(l.at).toISOString(), lapsCompleted: l.laps, lapTime, fuelUsed, green: l.green };
+    // Only when the helper reads incidents, so events stay as they were for older recordings
+    if (l.incidents != null) lap.incidents = l.incidents;
+    return lap;
   }
 
   private reset() {
@@ -120,6 +129,7 @@ export class Detector {
     this.stoppedInBox = false;
     this.dirtyLap = false;
     this.lineFuel = null;
+    this.lineIncidents = null;
     this.pending = null;
     this.finished = false;
     this.greenLaps = [];
@@ -144,6 +154,7 @@ export class Detector {
       onPitRoad: s?.onPitRoad ?? false,
       caution: s ? isCaution(s.flags) : false,
       sessionTimeRemain: s && s.sessionTimeRemain >= 0 && s.sessionTimeRemain < 7 * 86400 ? s.sessionTimeRemain : null,
+      ...(s?.incidents != null ? { incidents: s.incidents } : {}),
     };
   }
 }

@@ -4,7 +4,6 @@
 @keyframes rec-pulse { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
 .practice-apply { display: inline-flex; align-items: center; gap: 6px; }
-.practice-applied { color: var(--open); font-size: 13.5px; margin: 8px 0 0; }
 .practice-laps tr.lap-inout td, .practice-laps tr.lap-outlier td, .practice-laps tr.lap-excluded td, .practice-laps tr.lap-notime td { color: var(--muted); }
 .practice-laps tr.lap-excluded .mono { text-decoration: line-through; }
 .practice-laps .lap-toggle { color: inherit; }
@@ -14,3 +13,4 @@
 .btn.tiny.danger { color: var(--block); }
 .practice-actions .btn.on:hover:not(:disabled) { background: var(--ink); color: var(--bg); opacity: 0.85; }
 .panel > .stats { margin-bottom: 10px; }
+.practice-laps .lap-inc { color: var(--block); font-weight: 600; }

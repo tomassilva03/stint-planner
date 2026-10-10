@@ -27,6 +27,7 @@ export function recordLaps(plan: Plan, events: LiveEvent[], state: LiveState | n
       lapTime: ev.lapTime,
       fuelUsed: ev.fuelUsed,
       green: ev.green,
+      incidents: ev.incidents ?? null,
       driver: state?.driverName ?? '',
       track: state?.track ?? '',
       car: state?.car ?? '',
@@ -40,6 +41,10 @@ export type LapStatus = 'clean' | 'inout' | 'outlier' | 'excluded' | 'notime';
 
 export interface PracticeSummary {
   laps: number;
+  /** Incident points over the laps that reported them; null when none did (older helper) */
+  incidents: number | null;
+  /** Laps that reported incident points */
+  incidentLaps: number;
   clean: number;
   avgLap: number | null;
   medianLap: number | null;
@@ -84,8 +89,11 @@ export function summarize(laps: PracticeLap[]): PracticeSummary {
   const fuelOutliers = outliers(fuelItems, FUEL_FLOOR_L);
   const fuel = fuelItems.filter((x) => !fuelOutliers.has(x.id)).map((x) => x.v);
 
+  const counted = laps.filter((l) => l.incidents != null);
   return {
     laps: laps.length,
+    incidents: counted.length ? counted.reduce((a, l) => a + l.incidents!, 0) : null,
+    incidentLaps: counted.length,
     clean: clean.length,
     avgLap: mean(clean),
     medianLap: median(clean),
