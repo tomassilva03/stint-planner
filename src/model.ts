@@ -80,6 +80,52 @@ export interface ChecklistItem {
   text: string;
 }
 
+/** One lap recorded from the iRacing helper during practice */
+export interface PracticeLap {
+  /** The helper's lap event id plus its time, so a lap is never recorded twice */
+  id: string;
+  /** When the lap ended (UTC ISO) */
+  at: string;
+  /** The car's laps completed at the end of this lap */
+  lap: number;
+  lapTime: number | null;
+  fuelUsed: number | null;
+  /** No pit visit and no caution during the lap: false for in and out laps */
+  green: boolean;
+  /** Who was driving, as iRacing names them */
+  driver: string;
+  track: string;
+  car: string;
+  /** Left out of the averages by hand */
+  excluded?: boolean;
+}
+
+/** One pit stop made during practice, timed from the helper's pit road and fuel readings */
+export interface PracticeStop {
+  id: string;
+  /** When the car left pit road (UTC ISO) */
+  at: string;
+  /** The car's laps completed when it entered pit road */
+  lap: number;
+  /** Pit road entry to exit, seconds */
+  pitRoadSec: number;
+  /** Litres added, 0 when no fuel was taken or the fuel level isn't known */
+  fuelAdded: number;
+  /** Seconds the fuel level was rising */
+  fillSec: number;
+  /** Tyres were changed, ticked by hand */
+  tires: boolean;
+  driver: string;
+  excluded?: boolean;
+}
+
+export interface Practice {
+  /** Laps from the helper are added to this plan while on */
+  recording: boolean;
+  laps: PracticeLap[];
+  stops: PracticeStop[];
+}
+
 export interface Plan {
   schema: 1;
   id: string;
@@ -130,6 +176,7 @@ export interface Plan {
     general: string;
   };
   checklist: ChecklistItem[];
+  practice: Practice;
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -196,6 +243,7 @@ export function newPlan(mode: Mode = 'team'): Plan {
     rules: defaultRules(),
     notes: { qualifyingDriver: '', registeringDrivers: '', goals: '', retirement: '', comms: '', setupLink: '', practice: '', general: '' },
     checklist: defaultChecklist(),
+    practice: { recording: false, laps: [], stops: [] },
   };
 }
 
@@ -220,6 +268,7 @@ export function migrate(raw: any): Plan {
     availability: raw?.availability ?? {},
     stints: raw?.stints ?? [],
     checklist: raw?.checklist ?? base.checklist,
+    practice: { ...base.practice, ...raw?.practice, laps: raw?.practice?.laps ?? [], stops: raw?.practice?.stops ?? [] },
     schema: 1,
   };
 }
