@@ -30,6 +30,8 @@ export interface Sample {
   driverName: string;
   track: string;
   car: string;
+  /** Incident points of our car this session (team total in a team race). Missing from older helpers. */
+  incidents?: number | null;
 }
 
 export const FLAG_CHECKERED = 0x0001;
@@ -49,7 +51,15 @@ interface EventBase {
 export type LiveEvent =
   | (EventBase & { kind: 'pitEntry' })
   | (EventBase & { kind: 'pitExit'; /** Seconds from pit entry to pit exit, if the entry was seen */ stopSec: number | null; /** False for a drive-through: the car never stopped in its box */ stopped: boolean })
-  | (EventBase & { kind: 'lap'; lapTime: number | null; fuelUsed: number | null; /** No pit visit and no caution during the lap */ green: boolean })
+  | (EventBase & {
+      kind: 'lap';
+      lapTime: number | null;
+      fuelUsed: number | null;
+      /** No pit visit and no caution during the lap */
+      green: boolean;
+      /** Incident points picked up during the lap; missing from older helpers */
+      incidents?: number | null;
+    })
   | (EventBase & { kind: 'cautionStart' })
   | (EventBase & { kind: 'cautionEnd' })
   | (EventBase & { kind: 'driverChange'; driverName: string })
@@ -73,6 +83,8 @@ export interface LiveState {
   onPitRoad: boolean;
   caution: boolean;
   sessionTimeRemain: number | null;
+  /** Incident points this session; missing from older helpers */
+  incidents?: number | null;
 }
 
 export type HelperMessage =

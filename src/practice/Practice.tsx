@@ -7,7 +7,8 @@ import { displayName } from '../live/names';
 import type { Live } from '../live/useLive';
 import { lapTime } from '../time';
 import { Select } from '../ui';
-import { stopSecFor, summarizeStops } from './pits';
+import { summarizeStops } from './pits';
+import { setPitTimes } from '../model';
 import { applyFuel, applyPace, byDriver, roundFuel, roundLap, summarize, type LapStatus } from './practice';
 import './practice.css';
 
@@ -43,7 +44,14 @@ export function Practice({ plan, update, live, readOnly }: Props) {
 
   const stops = plan.practice.stops;
   const pit = summarizeStops(stops, laps);
-  const newStopSec = pit.laneLossSec != null ? stopSecFor(pit.laneLossSec, pit.fillRate, plan.fuel.tankL) : null;
+  // What the measured figures would make of the plan's pit times
+  const measured = {
+    laneLossSec: pit.laneLossSec != null && pit.laneLossSec > 0 ? pit.laneLossSec : undefined,
+    fillRate: pit.fillRate ? Math.round(pit.fillRate * 100) / 100 : undefined,
+    tireSec: pit.tireSec ?? undefined,
+  };
+  const canApply = measured.laneLossSec != null || measured.fillRate != null || measured.tireSec != null;
+  const after = setPitTimes(plan, measured).pit;
   const fuel = all.avgFuel;
   const planPace = baseLapTime(plan);
 
@@ -94,12 +102,28 @@ export function Practice({ plan, update, live, readOnly }: Props) {
           Averages use clean laps only: in and out laps, laps with a caution and outliers (spins, traffic, a lap far off your median) are left out.
           Click a lap to leave it out or bring it back.
         </p>
+        {applied && (
+          <p className="toast" role="status">
+            {applied}
+          </p>
+        )}
       </section>
 
       <section className="stats">
         <Stat label="Clean laps" value={`${all.clean}`} sub={`of ${all.laps} recorded`} />
         <Stat label="Average lap" value={all.avgLap ? lapTime(all.avgLap) : '–'} sub="clean laps, outliers out" />
         <Stat label="Median lap" value={all.medianLap ? lapTime(all.medianLap) : '–'} sub={all.bestLap ? `best ${lapTime(all.bestLap)}` : ''} />
+        <Stat
+          label="Incidents"
+          value={all.incidents != null ? `${all.incidents}x` : '–'}
+          sub={
+            all.incidents == null
+              ? 'needs the updated helper'
+              : all.incidents
+                ? `${(all.incidentLaps / all.incidents).toFixed(1)} laps per incident point`
+                : `clean over ${all.incidentLaps} laps`
+          }
+        />
         <Stat label="Fuel per lap" value={fuel ? `${fuel.toFixed(2)} L` : '–'} sub={all.medianFuel ? `median ${all.medianFuel.toFixed(2)} L · ${all.fuelLaps} laps` : 'needs the driving PC'} />
       </section>
 
@@ -160,23 +184,23 @@ export function Practice({ plan, update, live, readOnly }: Props) {
             </table>
           </div>
           {team && <p className="muted small">Plan average pace now {lapTime(planPace)}.</p>}
-          {applied && (
-            <p className="practice-applied" role="status">
-              {applied}
-            </p>
-          )}
         </section>
       )}
 
       <section className="panel">
         <div className="panel-head">
           <h2>Pit stops</h2>
-          {!readOnly && stops.length > 0 && newStopSec != null && (
+          {!readOnly && canApply && (
             <button
               className="btn tiny"
               onClick={() => {
-                update((p) => ({ ...p, pit: { ...p.pit, stopSec: newStopSec, tireSec: pit.tireSec ?? p.pit.tireSec } }));
-                done(`Stop time set to ${newStopSec} s${pit.tireSec != null ? ` and tyres to ${Math.round(pit.tireSec)} s` : ''}.`);
+                update((p) => setPitTimes(p, measured));
+                const parts = [
+                  measured.fillRate != null && `refuel rate ${measured.fillRate.toFixed(2)} L/s`,
+                  measured.laneLossSec != null && `pit lane loss ${measured.laneLossSec.toFixed(1)} s`,
+                  measured.tireSec != null && `tyres ${Math.round(measured.tireSec)} s`,
+                ].filter(Boolean);
+                done(`Set ${parts.join(', ')} in Race setup.`);
               }}
             >
               Use in the plan
@@ -193,8 +217,14 @@ export function Practice({ plan, update, live, readOnly }: Props) {
           <Stat label="Tyres add" value={pit.tireSec != null ? `${pit.tireSec.toFixed(1)} s` : '–'} sub={pit.tireSec != null ? 'on top of refuelling' : 'needs a stop with tyres ticked'} />
           <Stat
             label="Plan stop time"
-            value={newStopSec != null ? `${newStopSec} s` : `${plan.pit.stopSec} s`}
-            sub={newStopSec != null ? `now ${plan.pit.stopSec} s · tyres ${plan.pit.tireSec} s` : 'in the plan now'}
+            value={`${after.stopSec} s`}
+            sub={
+              after.stopSec !== plan.pit.stopSec
+                ? `now ${plan.pit.stopSec} s · lane loss plus a full tank`
+                : after.laneLossSec && after.fillRate
+                  ? 'lane loss plus a full tank'
+                  : 'add the pit lane loss to work it out'
+            }
           />
         </section>
         {stops.length === 0 ? (
@@ -280,6 +310,7 @@ export function Practice({ plan, update, live, readOnly }: Props) {
                   {team && <th>Driver</th>}
                   <th className="num">Time</th>
                   <th className="num">Fuel</th>
+                  <th className="num">Inc</th>
                   <th>Counts?</th>
                   <th>When</th>
                 </tr>
@@ -295,6 +326,7 @@ export function Practice({ plan, update, live, readOnly }: Props) {
                       <td className={`num mono${all.fuelOutliers.has(l.id) ? ' fuel-out' : ''}`} title={all.fuelOutliers.has(l.id) ? 'Fuel use far off the others, left out of the fuel average' : undefined}>
                         {l.fuelUsed ? `${l.fuelUsed.toFixed(2)} L` : '–'}
                       </td>
+                      <td className={`num mono${l.incidents ? ' lap-inc' : ''}`}>{l.incidents == null ? '–' : `${l.incidents}x`}</td>
                       <td>
                         <button
                           className="btn tiny lap-toggle"

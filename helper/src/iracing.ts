@@ -121,6 +121,8 @@ export class IRacingReader {
       driverName: driver?.UserName ?? '',
       track: s.WeekendInfo?.TrackDisplayName ?? '',
       car: driver?.CarScreenName ?? '',
+      // The car's incident points: the team total counts every driver's, so a swap doesn't reset it
+      incidents: Math.max(one('PlayerCarTeamIncidentCount', 0), one('PlayerCarMyIncidentCount', 0), driver?.TeamIncidentCount ?? 0),
     };
   }
 }

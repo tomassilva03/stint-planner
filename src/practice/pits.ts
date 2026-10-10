@@ -127,6 +127,4 @@ export function summarizeStops(stops: PracticeStop[], laps: PracticeLap[]): PitS
   };
 }
 
-/** The plan's stop time: pit lane loss plus filling the tank from empty at the measured rate */
-export const stopSecFor = (laneLossSec: number, fillRate: number | null, tankL: number) =>
-  Math.round(laneLossSec + (fillRate ? tankL / fillRate : 0));
+

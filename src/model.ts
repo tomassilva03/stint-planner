@@ -96,6 +96,8 @@ export interface PracticeLap {
   driver: string;
   track: string;
   car: string;
+  /** Incident points picked up during the lap; missing when the helper didn't report them */
+  incidents?: number | null;
   /** Left out of the averages by hand */
   excluded?: boolean;
 }
@@ -151,10 +153,14 @@ export interface Plan {
     saveFuelFactor: number;
   };
   pit: {
-    /** Pit lane loss plus refuel, seconds */
+    /** Pit lane loss plus refuel, seconds. Worked out from the two fields below when both are set. */
     stopSec: number;
     tireSec: number;
     tiresByDefault: boolean;
+    /** Time lost driving through pit lane without stopping to work, seconds (0 = not set) */
+    laneLossSec?: number;
+    /** Refuelling speed, litres per second (0 = not set) */
+    fillRate?: number;
   };
   /** Used in solo mode, and in team mode when no driver lap times are set */
   baseLapTime: number;
@@ -245,6 +251,18 @@ export function newPlan(mode: Mode = 'team'): Plan {
     checklist: defaultChecklist(),
     practice: { recording: false, laps: [], stops: [] },
   };
+}
+
+/** The stop time from pit lane loss and refuel rate, when both are known: lane loss plus a full tank */
+export function stopSecFrom(pit: Plan['pit'], tankL: number): number | null {
+  return pit.laneLossSec && pit.laneLossSec > 0 && pit.fillRate && pit.fillRate > 0 ? Math.round(pit.laneLossSec + tankL / pit.fillRate) : null;
+}
+
+/** Sets the plan's pit lane loss and refuel rate (either may be left as is) and the stop time they give */
+export function setPitTimes(plan: Plan, patch: { laneLossSec?: number; fillRate?: number; tireSec?: number }): Plan {
+  const pit = { ...plan.pit, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v != null)) };
+  const stopSec = stopSecFrom(pit, plan.fuel.tankL);
+  return { ...plan, pit: stopSec != null ? { ...pit, stopSec } : pit };
 }
 
 /** Fill any fields missing from older or hand-edited saves. */

@@ -1,5 +1,5 @@
 import { lapsPerStint } from '../engine';
-import { uid, type Plan } from '../model';
+import { setPitTimes, stopSecFrom, uid, type Plan } from '../model';
 import { duration, inputUtcToIso, isoToInputUtc, lapTime, parseHm, parseLapTime } from '../time';
 import { Field, Labeled, NumberField } from '../ui';
 import type { ViewProps } from './Overview';
@@ -57,7 +57,7 @@ export function Setup({ plan, update, calc }: ViewProps) {
         <h2>Fuel and pace</h2>
         <div className="form-grid">
           <Labeled label="Fuel tank" htmlFor="fu-tank" unit="L" hint="Usable fuel, after any BoP fuel limit.">
-            <NumberField id="fu-tank" className="input" value={plan.fuel.tankL} min={0} onCommit={(v) => set((p) => void (p.fuel.tankL = v))} />
+            <NumberField id="fu-tank" className="input" value={plan.fuel.tankL} min={0} onCommit={(v) => update((p) => setPitTimes({ ...p, fuel: { ...p.fuel, tankL: v } }, {}))} />
           </Labeled>
           <Labeled label="Fuel per lap" htmlFor="fu-lap" unit="L">
             <NumberField id="fu-lap" className="input" value={plan.fuel.perLapL} min={0} onCommit={(v) => set((p) => void (p.fuel.perLapL = v))} />
@@ -96,8 +96,23 @@ export function Setup({ plan, update, calc }: ViewProps) {
       <section className="panel">
         <h2>Pit stops</h2>
         <div className="form-grid">
-          <Labeled label="Stop without tyres" htmlFor="pit-stop" unit="s" hint="Pit lane time loss plus a full refuel.">
-            <NumberField id="pit-stop" className="input" value={plan.pit.stopSec} min={0} onCommit={(v) => set((p) => void (p.pit.stopSec = v))} />
+          <Labeled label="Pit lane loss" htmlFor="pit-lane" unit="s" hint="Driving through pit lane without stopping. Measured on the Practice tab.">
+            <NumberField id="pit-lane" className="input" value={plan.pit.laneLossSec ?? 0} min={0} onCommit={(v) => update((p) => setPitTimes(p, { laneLossSec: v }))} />
+          </Labeled>
+          <Labeled label="Refuel rate" htmlFor="pit-fill" unit="L/s" hint={plan.pit.fillRate ? `A full ${plan.fuel.tankL} L tank takes ${Math.round(plan.fuel.tankL / plan.pit.fillRate)} s.` : 'Measured on the Practice tab.'}>
+            <NumberField id="pit-fill" className="input" value={plan.pit.fillRate ?? 0} min={0} digits={2} onCommit={(v) => update((p) => setPitTimes(p, { fillRate: v }))} />
+          </Labeled>
+          <Labeled
+            label="Stop without tyres"
+            htmlFor="pit-stop"
+            unit="s"
+            hint={stopSecFrom(plan.pit, plan.fuel.tankL) != null ? 'Pit lane loss plus a full refuel, from the two fields before.' : 'Pit lane loss plus a full refuel. Fill in both fields before to work it out.'}
+          >
+            {stopSecFrom(plan.pit, plan.fuel.tankL) != null ? (
+              <output id="pit-stop" className="readout-value">{plan.pit.stopSec}</output>
+            ) : (
+              <NumberField id="pit-stop" className="input" value={plan.pit.stopSec} min={0} onCommit={(v) => set((p) => void (p.pit.stopSec = v))} />
+            )}
           </Labeled>
           <Labeled label="Extra for four tyres" htmlFor="pit-tyre" unit="s">
             <NumberField id="pit-tyre" className="input" value={plan.pit.tireSec} min={0} onCommit={(v) => set((p) => void (p.pit.tireSec = v))} />
