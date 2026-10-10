@@ -21,6 +21,7 @@ import { pitCall } from './engineer/pitCall';
 import { liveRaceState } from './strategy/RaceStatePanel';
 import { Practice } from './practice/Practice';
 import { recordLaps } from './practice/practice';
+import { PitWatcher } from './practice/pits';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -119,6 +120,15 @@ export default function App() {
     if (!plan.practice.recording || cloud.readOnly) return;
     if (recordLaps(plan, live.events, live.state)) update((p) => recordLaps(p, live.events, live.state) ?? p);
   }, [plan, live.events, live.state, cloud.readOnly, update]);
+  // Practice pit stops are timed from the live readings
+  const pits = useRef(new PitWatcher());
+  const recordingRef = useRef(false);
+  recordingRef.current = plan.practice.recording && !cloud.readOnly;
+  useEffect(() => {
+    if (!live.state) return;
+    const stop = pits.current.push(live.state, Date.now());
+    if (stop && recordingRef.current) update((p) => ({ ...p, practice: { ...p.practice, stops: [...p.practice.stops, stop] } }));
+  }, [live.state, update]);
   const engineer = useEngineer(plan.id, live, cloud.session, !!cloud.meta[plan.id], call);
   const team = plan.mode === 'team';
   const visibleTabs = TABS.filter((t) => !t.team || team);

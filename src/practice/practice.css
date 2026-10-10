@@ -12,3 +12,5 @@
 .practice-laps tr.lap-outlier .lap-toggle { color: var(--tent); }
 .practice-laps .fuel-out { color: var(--tent); }
 .btn.tiny.danger { color: var(--block); }
+.practice-actions .btn.on:hover:not(:disabled) { background: var(--ink); color: var(--bg); opacity: 0.85; }
+.panel > .stats { margin-bottom: 10px; }

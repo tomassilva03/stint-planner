@@ -7,6 +7,7 @@ import { displayName } from '../live/names';
 import type { Live } from '../live/useLive';
 import { lapTime } from '../time';
 import { Select } from '../ui';
+import { stopSecFor, summarizeStops } from './pits';
 import { applyFuel, applyPace, byDriver, roundFuel, roundLap, summarize, type LapStatus } from './practice';
 import './practice.css';
 
@@ -40,6 +41,9 @@ export function Practice({ plan, update, live, readOnly }: Props) {
     setTimeout(() => setApplied(''), 4000);
   };
 
+  const stops = plan.practice.stops;
+  const pit = summarizeStops(stops, laps);
+  const newStopSec = pit.laneLossSec != null ? stopSecFor(pit.laneLossSec, pit.fillRate, plan.fuel.tankL) : null;
   const fuel = all.avgFuel;
   const planPace = baseLapTime(plan);
 
@@ -163,6 +167,88 @@ export function Practice({ plan, update, live, readOnly }: Props) {
           )}
         </section>
       )}
+
+      <section className="panel">
+        <div className="panel-head">
+          <h2>Pit stops</h2>
+          {!readOnly && stops.length > 0 && newStopSec != null && (
+            <button
+              className="btn tiny"
+              onClick={() => {
+                update((p) => ({ ...p, pit: { ...p.pit, stopSec: newStopSec, tireSec: pit.tireSec ?? p.pit.tireSec } }));
+                done(`Stop time set to ${newStopSec} s${pit.tireSec != null ? ` and tyres to ${Math.round(pit.tireSec)} s` : ''}.`);
+              }}
+            >
+              Use in the plan
+            </button>
+          )}
+        </div>
+        <p className="muted small">
+          Make practice stops while recording. Each stop is timed on pit road with the fuel added; the time lost is your in-lap and out-lap against your
+          median clean lap. Tick the stops where you changed tyres.
+        </p>
+        <section className="stats">
+          <Stat label="Fill rate" value={pit.fillRate ? `${pit.fillRate.toFixed(2)} L/s` : '–'} sub={pit.fillRate ? `${Math.round(plan.fuel.tankL / pit.fillRate)} s for a ${plan.fuel.tankL} L tank` : 'stop for fuel on the driving PC'} />
+          <Stat label="Pit lane loss" value={pit.laneLossSec != null ? `${pit.laneLossSec.toFixed(1)} s` : '–'} sub="driving through, without fuel or tyres" />
+          <Stat label="Tyres add" value={pit.tireSec != null ? `${pit.tireSec.toFixed(1)} s` : '–'} sub={pit.tireSec != null ? 'on top of refuelling' : 'needs a stop with tyres ticked'} />
+          <Stat
+            label="Plan stop time"
+            value={newStopSec != null ? `${newStopSec} s` : `${plan.pit.stopSec} s`}
+            sub={newStopSec != null ? `now ${plan.pit.stopSec} s · tyres ${plan.pit.tireSec} s` : 'in the plan now'}
+          />
+        </section>
+        {stops.length === 0 ? (
+          <p className="muted">No stops yet.</p>
+        ) : (
+          <div className="table-wrap">
+            <table className="table practice-laps">
+              <thead>
+                <tr>
+                  <th className="num">Lap</th>
+                  {team && <th>Driver</th>}
+                  <th className="num">Pit road</th>
+                  <th className="num">Fuel added</th>
+                  <th className="num">Fill rate</th>
+                  <th className="num">Time lost</th>
+                  <th>Tyres</th>
+                  <th>Counts?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...stops].reverse().map((st) => {
+                  const c = pit.perStop.get(st.id)!;
+                  const set = (patch: Partial<typeof st>) => setPractice((p) => ({ ...p, stops: p.stops.map((x) => (x.id === st.id ? { ...x, ...patch } : x)) }));
+                  return (
+                    <tr key={st.id} className={st.excluded ? 'lap-excluded' : 'lap-clean'}>
+                      <td className="num">{st.lap}</td>
+                      {team && <td>{displayName(st.driver, plan.drivers) || '–'}</td>}
+                      <td className="num mono">{st.pitRoadSec.toFixed(1)} s</td>
+                      <td className="num mono">{st.fuelAdded ? `${st.fuelAdded.toFixed(1)} L` : '–'}</td>
+                      <td className="num mono">{c.fillRate ? `${c.fillRate.toFixed(2)} L/s` : '–'}</td>
+                      <td className="num mono" title={c.lossSec == null ? 'Needs the in-lap and out-lap times and some clean laps' : undefined}>
+                        {c.lossSec != null ? `${c.lossSec.toFixed(1)} s` : '–'}
+                      </td>
+                      <td>
+                        <input type="checkbox" aria-label="Tyres changed" checked={st.tires} disabled={readOnly} onChange={(e) => set({ tires: e.target.checked })} />
+                      </td>
+                      <td>
+                        <button className="btn tiny lap-toggle" disabled={readOnly} onClick={() => set({ excluded: !st.excluded })}>
+                          {st.excluded ? 'Left out' : 'Counts'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!readOnly && stops.length > 0 && (
+          <button className="btn tiny" onClick={() => setPractice((p) => ({ ...p, stops: [] }))}>
+            Clear stops
+          </button>
+        )}
+      </section>
 
       <section className="panel">
         <div className="panel-head">
